@@ -37,7 +37,13 @@ function buildDeck() {
   return deck;
 }
 
-const ROUND_SIZES = [5, 4, 3, 2, 1, 2, 3, 4, 5];
+// Dynamic round sizes based on number of players
+// 3 players → max 7 cards, 4 players → max 5, 5 players → max 4
+function getRoundSize(roundIdx, numPlayers) {
+  const maxCards = Math.floor(22 / numPlayers);
+  // Cycle: maxCards, maxCards-1, ..., 2, 1, maxCards, maxCards-1, ...
+  return maxCards - (roundIdx % maxCards);
+}
 
 // Build the "view" a specific player sees
 function buildPlayerView(room, playerId) {
@@ -67,7 +73,7 @@ function buildPlayerView(room, playerId) {
   return {
     phase: gs.phase,
     roundIdx: gs.roundIdx,
-    roundSize: ROUND_SIZES[gs.roundIdx % ROUND_SIZES.length],
+    roundSize: getRoundSize(gs.roundIdx, gs.players.length),
     dealerIdx: gs.dealerIdx,
     currentPlayerIdx: gs.currentPlayerIdx,
     announceIdx: gs.announceIdx,
@@ -143,7 +149,7 @@ function initGameState(room) {
 function dealRound(room) {
   const gs = room.state;
   const n = gs.players.length;
-  const size = ROUND_SIZES[gs.roundIdx % ROUND_SIZES.length];
+  const size = getRoundSize(gs.roundIdx, n);
   const deck = shuffle(buildDeck());
 
   gs.oneCardSpecial = size === 1;
@@ -164,7 +170,7 @@ function dealRound(room) {
   gs.currentPlayerIdx = gs.announceIdx;
   gs.leadPlayerIdx = (gs.dealerIdx + 1) % n;
 
-  const roundSize = ROUND_SIZES[gs.roundIdx % ROUND_SIZES.length];
+  const roundSize = getRoundSize(gs.roundIdx, n);
   gs.log.push(`📋 Manche ${gs.roundIdx + 1} — ${roundSize} carte${roundSize > 1 ? 's' : ''}`);
 }
 
@@ -212,7 +218,7 @@ function handleAnnounce(room, playerIdx, num) {
   if (gs.phase !== 'announce') return { error: 'Mauvaise phase' };
   if (playerIdx !== gs.announceIdx) return { error: 'Ce n\'est pas votre tour d\'annoncer' };
 
-  const size = ROUND_SIZES[gs.roundIdx % ROUND_SIZES.length];
+  const size = getRoundSize(gs.roundIdx, n);
   const remaining = gs.players.filter(p => p.announced === null).length;
   const isLast = remaining === 1;
 
@@ -316,7 +322,7 @@ function handleResolveExcuse(room, playerIdx, value) {
 function resolveTrick(room) {
   const gs = room.state;
   const n = gs.players.length;
-  const size = ROUND_SIZES[gs.roundIdx % ROUND_SIZES.length];
+  const size = getRoundSize(gs.roundIdx, n);
 
   let winner = gs.currentTrick[0];
   gs.currentTrick.forEach(t => {
