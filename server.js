@@ -72,6 +72,8 @@ function buildPlayerView(room, playerId) {
     currentPlayerIdx: gs.currentPlayerIdx,
     announceIdx: gs.announceIdx,
     currentTrick: gs.currentTrick,
+    lastCompletedTrick: gs.lastCompletedTrick || null,
+    lastTrickWinnerIdx: gs.lastTrickWinnerIdx !== undefined ? gs.lastTrickWinnerIdx : null,
     tricksPlayed: gs.tricksPlayed,
     oneCardSpecial: gs.oneCardSpecial,
     excuseWaiting: gs.excuseWaiting ? { playerIdx: gs.excuseWaiting.playerIdx } : null,
@@ -118,6 +120,8 @@ function initGameState(room) {
     announceIdx: (dealerIdx + 1) % n,
     leadPlayerIdx: (dealerIdx + 1) % n,
     currentTrick: [],
+    lastCompletedTrick: null,
+    lastTrickWinnerIdx: null,
     tricksPlayed: 0,
     oneCardSpecial: false,
     excuseWaiting: null,
@@ -144,6 +148,8 @@ function dealRound(room) {
 
   gs.oneCardSpecial = size === 1;
   gs.currentTrick = [];
+  gs.lastCompletedTrick = null;
+  gs.lastTrickWinnerIdx = null;
   gs.tricksPlayed = 0;
   gs.excuseWaiting = null;
 
@@ -164,6 +170,40 @@ function dealRound(room) {
 
 function getTotalAnnounced(gs) {
   return gs.players.reduce((s, p) => s + (p.announced !== null ? p.announced : 0), 0);
+}
+
+// Auto-play all cards in 1-card special round (all cards revealed at once)
+function autoPlayOneCard(room) {
+  const gs = room.state;
+  const n = gs.players.length;
+
+  let excusePlayerIdx = -1;
+  gs.players.forEach((p, i) => {
+    const card = p.hand[0];
+    if (card.isExcuse) {
+      excusePlayerIdx = i;
+      gs.currentTrick.push({ card: { ...card, effectiveValue: null }, playerIdx: i });
+    } else {
+      card.effectiveValue = card.value;
+      gs.currentTrick.push({ card, playerIdx: i });
+    }
+    p.hand = [];
+  });
+
+  if (excusePlayerIdx >= 0) {
+    gs.excuseWaiting = { playerIdx: excusePlayerIdx, cardId: 'EXCUSE' };
+    gs.log.push(`⭐ ${gs.players[excusePlayerIdx].name} doit choisir la valeur de l'Excuse`);
+  } else {
+    // Broadcast first so players see the cards on the table
+    broadcast(room);
+    // Then resolve after a delay so they can see the result
+    setTimeout(() => {
+      if (!room.state || room.state.phase !== 'play') return;
+      resolveTrick(room);
+      broadcast(room);
+    }, 2500);
+    return 'delayed'; // Signal to caller not to broadcast again
+  }
 }
 
 function handleAnnounce(room, playerIdx, num) {
@@ -190,7 +230,15 @@ function handleAnnounce(room, playerIdx, num) {
   if (gs.players.every(p => p.announced !== null)) {
     gs.phase = 'play';
     gs.currentPlayerIdx = gs.leadPlayerIdx;
-    gs.log.push(`🃏 Phase de jeu — ${gs.players[gs.leadPlayerIdx].name} commence`);
+
+    if (gs.oneCardSpecial) {
+      // 1-card round: auto-play all cards at once
+      gs.log.push('🃏 Manche spéciale — révélation des cartes !');
+      const autoResult = autoPlayOneCard(room);
+      if (autoResult === 'delayed') return { delayed: true };
+    } else {
+      gs.log.push(`🃏 Phase de jeu — ${gs.players[gs.leadPlayerIdx].name} commence`);
+    }
   } else {
     let next = (gs.announceIdx + 1) % n;
     while (gs.players[next].announced !== null) next = (next + 1) % n;
@@ -281,6 +329,9 @@ function resolveTrick(room) {
   const winnerName = gs.players[winner.playerIdx].name;
   gs.log.push(`✅ Pli remporté par ${winnerName} (${gs.tricksPlayed}/${size})`);
 
+  // Save completed trick before clearing so clients can display it
+  gs.lastCompletedTrick = [...gs.currentTrick];
+  gs.lastTrickWinnerIdx = winner.playerIdx;
   gs.currentTrick = [];
   gs.leadPlayerIdx = winner.playerIdx;
   gs.currentPlayerIdx = winner.playerIdx;
@@ -396,7 +447,7 @@ io.on('connection', (socket) => {
 
     const result = handleAnnounce(room, playerIdx, num);
     if (result.error) return socket.emit('error', result.error);
-    broadcast(room);
+    if (!result.delayed) broadcast(room);
   });
 
   socket.on('play_card', ({ cardId, excuseValue }) => {

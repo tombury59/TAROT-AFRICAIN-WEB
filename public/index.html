@@ -684,37 +684,37 @@
       transition: transform .2s;
     }
 
-    /* ── Trick zone — pile mode ── */
+    /* ── Trick zone — spread around center ── */
     .trick-zone {
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 200px;
-      height: 230px;
+      width: min(90vw, 600px);
+      height: min(60vh, 420px);
       pointer-events: none;
       z-index: 10;
     }
 
     .trick-card-wrap {
       position: absolute;
-      top: 50%;
-      left: 50%;
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 4px;
       animation: dropCard .38s cubic-bezier(.22, .61, .36, 1);
+      transform: translate(-50%, -50%);
     }
 
     @keyframes dropCard {
       from {
         opacity: 0;
-        transform: translateY(-30px) scale(.82) rotate(0deg);
+        transform: translate(-50%, -50%) translateY(-30px) scale(.82);
       }
 
       to {
         opacity: 1;
+        transform: translate(-50%, -50%);
       }
     }
 
@@ -1029,7 +1029,7 @@
     #excuse-modal {
       position: fixed;
       inset: 0;
-      z-index: 9000;
+      z-index: 9999;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -1037,6 +1037,8 @@
       backdrop-filter: blur(4px);
       pointer-events: all;
       animation: fadeIn .22s ease;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
     }
 
     #excuse-modal.hidden {
@@ -1102,7 +1104,8 @@
     .excuse-modal-btn {
       flex: 1;
       /* Touch target: au moins 56px de hauteur */
-      min-height: 64px;
+      min-height: 72px;
+      min-width: 100px;
       border-radius: 14px;
       border: 1.5px solid rgba(200, 100, 255, .4);
       background: rgba(255, 255, 255, .05);
@@ -1120,6 +1123,10 @@
       gap: 4px;
       padding: .8rem .5rem;
       -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+      user-select: none;
+      position: relative;
+      z-index: 9999;
     }
 
     .excuse-modal-btn:hover,
@@ -1661,11 +1668,11 @@
       <div class="excuse-modal-title">L'Excuse</div>
       <div class="excuse-modal-desc">Choisissez la valeur que prendra l'Excuse dans ce pli</div>
       <div class="excuse-modal-btns">
-        <button class="excuse-modal-btn" onclick="resolveExcuse(0)">
+        <button class="excuse-modal-btn" id="excuse-btn-0">
           <span class="excuse-modal-btn-val">0</span>
           <span class="excuse-modal-btn-sub">la plus faible</span>
         </button>
-        <button class="excuse-modal-btn" onclick="resolveExcuse(22)">
+        <button class="excuse-modal-btn" id="excuse-btn-22">
           <span class="excuse-modal-btn-val">22</span>
           <span class="excuse-modal-btn-sub">la plus forte</span>
         </button>
@@ -1870,12 +1877,44 @@
     // ══════════════════════════════════════
     // Excuse modal helpers
     // ══════════════════════════════════════
+    let _excuseModalVisible = false;
     function showExcuseModal() {
+      if (_excuseModalVisible) return; // avoid re-render flicker
+      _excuseModalVisible = true;
       document.getElementById('excuse-modal').classList.remove('hidden');
     }
     function hideExcuseModal() {
+      _excuseModalVisible = false;
       document.getElementById('excuse-modal').classList.add('hidden');
     }
+
+    // Bind excuse buttons with both click AND touch events for mobile
+    function bindExcuseButtons() {
+      const btn0 = document.getElementById('excuse-btn-0');
+      const btn22 = document.getElementById('excuse-btn-22');
+      if (!btn0 || !btn22) return;
+
+      function handleExcuse(value) {
+        return function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          resolveExcuse(value);
+        };
+      }
+
+      // Remove old listeners by cloning
+      const newBtn0 = btn0.cloneNode(true);
+      const newBtn22 = btn22.cloneNode(true);
+      btn0.parentNode.replaceChild(newBtn0, btn0);
+      btn22.parentNode.replaceChild(newBtn22, btn22);
+
+      newBtn0.addEventListener('click', handleExcuse(0));
+      newBtn0.addEventListener('touchend', handleExcuse(0));
+      newBtn22.addEventListener('click', handleExcuse(22));
+      newBtn22.addEventListener('touchend', handleExcuse(22));
+    }
+    // Bind on load
+    bindExcuseButtons();
 
     // ══════════════════════════════════════
     // Main Game Render
@@ -1998,26 +2037,53 @@
         center.appendChild(seat);
       });
 
-      // ── Trick zone ──
+      // ── Trick zone ── cards spread in front of each player ──
       const trickZone = document.getElementById('trick-zone');
+
+      // Compute position for each played card: placed toward the player's seat
+      function getTrickCardPosition(playerIdx, nPlayers, myIdx) {
+        const relative = (playerIdx - myIdx + nPlayers) % nPlayers;
+        // Positions around the center of trick-zone (as % of trick-zone dimensions)
+        // Bottom = me (relative 0), then clockwise
+        if (nPlayers === 3) {
+          const positions = [
+            { left: 50, top: 72 },   // me (bottom)
+            { left: 20, top: 28 },   // left
+            { left: 80, top: 28 },   // right
+          ];
+          return positions[relative];
+        } else if (nPlayers === 4) {
+          const positions = [
+            { left: 50, top: 72 },   // me (bottom)
+            { left: 18, top: 50 },   // left
+            { left: 50, top: 22 },   // top
+            { left: 82, top: 50 },   // right
+          ];
+          return positions[relative];
+        } else {
+          const positions = [
+            { left: 50, top: 75 },   // me (bottom)
+            { left: 15, top: 55 },   // left
+            { left: 25, top: 20 },   // top-left
+            { left: 75, top: 20 },   // top-right
+            { left: 85, top: 55 },   // right
+          ];
+          return positions[relative];
+        }
+      }
 
       const renderTrickCards = (trick, players) => {
         trickZone.innerHTML = '';
         if (!trick || trick.length === 0) return;
-        const rots = [-7, 6, -4, 9, -5];
-        const offsX = [-8, 10, -5, 7, -3];
-        const offsY = [-3, 7, -6, 4, -8];
+        const nPlayers = players.length;
         trick.forEach((t, idx) => {
           const p = players[t.playerIdx];
-          const rot = rots[idx % rots.length];
-          const ox = offsX[idx % offsX.length];
-          const oy = offsY[idx % offsY.length];
+          const pos = getTrickCardPosition(t.playerIdx, nPlayers, gs.myIdx);
           const wrap = document.createElement('div');
           wrap.className = 'trick-card-wrap';
           wrap.style.cssText = `
-            margin-left: calc(-1 * var(--card-w) / 2);
-            margin-top:  calc(-1 * var(--card-h) / 2);
-            transform: rotate(${rot}deg) translate(${ox}px, ${oy}px);
+            left: ${pos.left}%;
+            top: ${pos.top}%;
             z-index: ${idx + 1};
           `;
           wrap.innerHTML = `
@@ -2028,17 +2094,14 @@
         });
       };
 
-      const prevTrickKey = 'lastRenderedTrick_' + myRoom;
-      const prevTrickStr = sessionStorage.getItem(prevTrickKey);
-      const prevTrick = prevTrickStr ? JSON.parse(prevTrickStr) : null;
-
       if (gs.currentTrick?.length > 0) {
-        sessionStorage.setItem(prevTrickKey, JSON.stringify({ trick: gs.currentTrick, players: gs.players }));
+        // Trick in progress: show cards played so far
         renderTrickCards(gs.currentTrick, gs.players);
-      } else if (prevTrick && gs.tricksPlayed > 0) {
-        const winnerId = gs.lastTrickWinner;
-        const winnerP = winnerId !== undefined ? gs.players[winnerId] : null;
-        renderTrickCards(prevTrick.trick, prevTrick.players);
+      } else if (gs.lastCompletedTrick && gs.lastCompletedTrick.length > 0) {
+        // Trick just finished: show ALL cards (including last played) with winner overlay
+        const winnerIdx = gs.lastTrickWinnerIdx;
+        const winnerP = winnerIdx !== null && winnerIdx !== undefined ? gs.players[winnerIdx] : null;
+        renderTrickCards(gs.lastCompletedTrick, gs.players);
         if (winnerP) {
           const overlay = document.createElement('div');
           overlay.className = 'trick-done-overlay';
@@ -2048,16 +2111,16 @@
         clearTimeout(window._trickClearTimer);
         window._trickClearTimer = setTimeout(() => {
           trickZone.innerHTML = '';
-          sessionStorage.removeItem(prevTrickKey);
-        }, 2200);
+        }, 2500);
       } else {
         trickZone.innerHTML = '';
-        sessionStorage.removeItem(prevTrickKey);
       }
 
       // ── Excuse modal — affiche le modal global si c'est mon tour de choisir ──
       if (gs.excuseWaiting && gs.excuseWaiting.playerIdx === gs.myIdx) {
         showExcuseModal();
+        // Re-bind buttons in case DOM was touched
+        bindExcuseButtons();
       } else {
         hideExcuseModal();
       }
@@ -2229,6 +2292,7 @@
     function doAnnounce(num) { socket.emit('announce', { num }); }
     function doPlayCard(cardId) { socket.emit('play_card', { cardId }); }
     function resolveExcuse(value) {
+      if (!_excuseModalVisible) return; // prevent double-fire
       hideExcuseModal();
       socket.emit('resolve_excuse', { value });
     }
