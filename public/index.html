@@ -578,13 +578,85 @@
       transform: scale(.7);
     }
 
-    .seat-ann {
-      font-size: .62rem;
-      color: var(--gold-light);
-      font-style: italic;
-      margin-top: 2px;
-      text-shadow: 0 1px 4px rgba(0, 0, 0, .9);
+    /* ── Score pill under seat ── */
+    .seat-score {
+      margin-top: 5px;
+      background: rgba(0, 0, 0, .65);
+      border: 1px solid rgba(255, 255, 255, .1);
+      border-radius: 30px;
+      padding: 3px 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      min-width: 60px;
+      backdrop-filter: blur(4px);
     }
+
+    .seat-score-nums {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-family: 'Cinzel', serif;
+      font-size: .62rem;
+      font-weight: 700;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .seat-score-done {
+      color: #fff;
+    }
+
+    .seat-score-sep {
+      color: rgba(255,255,255,.3);
+      font-size: .55rem;
+    }
+
+    .seat-score-ann {
+      color: var(--gold);
+    }
+
+    .seat-score-track {
+      display: flex;
+      gap: 2px;
+      justify-content: center;
+      flex-wrap: wrap;
+      max-width: 70px;
+    }
+
+    .sst-pip {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      border: 1.2px solid rgba(201, 168, 76, .4);
+      background: rgba(255,255,255,.07);
+      transition: background .25s, border-color .25s, transform .2s;
+    }
+
+    .sst-pip.done {
+      background: var(--gold);
+      border-color: var(--gold-light);
+      transform: scale(1.1);
+    }
+
+    .sst-pip.over {
+      background: #e57373;
+      border-color: #ff8a80;
+      transform: scale(1.1);
+    }
+
+    .seat-score-badge {
+      font-size: .48rem;
+      font-family: 'Cinzel', serif;
+      letter-spacing: .5px;
+      border-radius: 4px;
+      padding: 1px 4px;
+    }
+
+    .ssb-ok  { color: #5ec95e; }
+    .ssb-bad { color: #e57373; }
+    .ssb-wait { color: rgba(201,168,76,.7); }
 
     /* ── Other players' hand (face-down) ── */
     .seat-hand-back {
@@ -769,6 +841,35 @@
       pointer-events: none;
     }
 
+    /* ── Hover veil overlay ── */
+    .card-hover-veil {
+      position: absolute;
+      inset: 0;
+      border-radius: 7px;
+      background: rgba(0, 0, 0, .52);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity .18s ease;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .card-hover-veil-val {
+      font-family: 'Cinzel', serif;
+      font-size: 2rem;
+      font-weight: 900;
+      color: #fff;
+      text-shadow: 0 2px 12px rgba(0,0,0,.8), 0 0 24px rgba(201,168,76,.5);
+      line-height: 1;
+      letter-spacing: 1px;
+    }
+
+    .tcard:hover .card-hover-veil {
+      opacity: 1;
+    }
+
     .card-val {
       font-family: 'Cinzel', serif;
       font-size: 1.6rem;
@@ -812,6 +913,10 @@
       transform: none;
     }
 
+    .tcard.not-playable:hover .card-hover-veil {
+      opacity: 0;
+    }
+
     /* Fanned hand */
     .hand-fan {
       display: flex;
@@ -827,13 +932,16 @@
 
     /* ── Announce panel — redesigned ── */
     .action-panel {
-      width: 100%;
+      width: calc(100% - 1.6rem);
       max-width: 500px;
       background: rgba(0, 0, 0, .82);
-      border-top: 1px solid rgba(201, 168, 76, .18);
+      border: 1px solid rgba(201, 168, 76, .18);
+      border-radius: 18px 18px 0 0;
       backdrop-filter: blur(10px);
       padding: .9rem 1.2rem 1rem;
       pointer-events: all;
+      box-shadow: 0 -4px 24px rgba(0,0,0,.5), inset 0 1px 0 rgba(201,168,76,.1);
+      margin: 0 auto;
     }
 
     /* ── Ann num buttons ── */
@@ -1079,33 +1187,97 @@
       z-index: 15;
     }
 
-    /* ── Trick counter ── */
+    /* ── Trick counter — visual pips ── */
     .trick-counter {
       position: absolute;
       top: 60px;
       right: 14px;
-      background: rgba(0, 0, 0, .6);
-      border: 1px solid rgba(201, 168, 76, .18);
-      border-radius: 10px;
-      padding: .3rem .65rem;
+      background: rgba(0, 0, 0, .72);
+      border: 1px solid rgba(201, 168, 76, .25);
+      border-radius: 14px;
+      padding: .45rem .75rem;
       text-align: center;
       pointer-events: none;
       z-index: 15;
-    }
-
-    .tc-num {
-      font-family: 'Cinzel', serif;
-      font-size: 1.1rem;
-      font-weight: 900;
-      color: var(--gold);
-      line-height: 1;
+      backdrop-filter: blur(6px);
+      min-width: 58px;
+      box-shadow: 0 4px 16px rgba(0,0,0,.5), inset 0 1px 0 rgba(201,168,76,.1);
     }
 
     .tc-label {
-      font-size: .52rem;
-      color: var(--cream-dim);
-      opacity: .6;
-      letter-spacing: 1px;
+      font-family: 'Cinzel', serif;
+      font-size: .48rem;
+      color: var(--gold);
+      opacity: .75;
+      letter-spacing: 2px;
+      margin-bottom: .35rem;
+    }
+
+    .tc-pips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      justify-content: center;
+      max-width: 80px;
+    }
+
+    .tc-pip {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(201, 168, 76, .35);
+      background: rgba(255,255,255,.06);
+      transition: background .3s, border-color .3s, transform .25s;
+    }
+
+    .tc-pip.won {
+      background: var(--gold);
+      border-color: var(--gold-light);
+      box-shadow: 0 0 6px rgba(201,168,76,.6);
+      transform: scale(1.15);
+    }
+
+    .tc-score-txt {
+      font-family: 'Cinzel', serif;
+      font-size: .72rem;
+      font-weight: 900;
+      color: var(--gold);
+      margin-top: .3rem;
+      line-height: 1;
+    }
+
+    /* ── Trick pause overlay (pli terminé) ── */
+    .trick-done-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 11;
+      animation: trickDoneFade 2.2s ease forwards;
+    }
+
+    .trick-done-badge {
+      background: rgba(0,0,0,.78);
+      border: 1px solid rgba(201,168,76,.45);
+      border-radius: 16px;
+      padding: .4rem 1.1rem;
+      font-family: 'Cinzel', serif;
+      font-size: .72rem;
+      letter-spacing: 2px;
+      color: var(--gold-light);
+      white-space: nowrap;
+      backdrop-filter: blur(4px);
+      box-shadow: 0 4px 18px rgba(0,0,0,.6);
+      transform: translateY(-48px);
+    }
+
+    @keyframes trickDoneFade {
+      0%   { opacity: 0; }
+      12%  { opacity: 1; }
+      70%  { opacity: 1; }
+      100% { opacity: 0; }
     }
 
     /* ═══════════════════════════════════════════════
@@ -1301,10 +1473,7 @@
         ⚠ Manche spéciale : vous voyez les cartes des autres, pas la vôtre !
       </div>
 
-      <div class="trick-counter" id="trick-counter" style="display:none;">
-        <div class="tc-num" id="tc-num">0/0</div>
-        <div class="tc-label">PLIS</div>
-      </div>
+      <div class="trick-counter" id="trick-counter" style="display:none;"></div>
 
       <div class="log-strip" id="log-strip"></div>
       <div class="waiting-pill" id="waiting-pill" style="display:none;"></div>
@@ -1483,6 +1652,8 @@
     // ══════════════════════════════════════
     function cardHTML(card, opts = {}) {
       const { clickable = false, clickFn = '' } = opts;
+      // Compute display label for hover veil
+      const hoverLabel = !card || card.hidden ? '' : (card.isExcuse ? '★' : String(card.value));
 
       // ── Dos de carte ──
       if (!card || card.hidden) {
@@ -1512,6 +1683,7 @@
         <div class="card-sym">⚜</div>
       </div>
       ${evLabel}
+      <div class="card-hover-veil"><span class="card-hover-veil-val">${hoverLabel}</span></div>
     </div>
   </div>`;
     }
@@ -1553,12 +1725,23 @@
       // One-card banner
       document.getElementById('onecard-banner').style.display = gs.oneCardSpecial ? 'block' : 'none';
 
-      // Trick counter
+      // Trick counter — visual pips
+      const trickCounterEl = document.getElementById('trick-counter');
       if (gs.phase === 'play') {
-        document.getElementById('trick-counter').style.display = 'block';
-        document.getElementById('tc-num').textContent = `${gs.tricksPlayed}/${size}`;
+        trickCounterEl.style.display = 'block';
+        const myTricksWon = me.tricksWon || 0;
+        const myAnnounced = me.announced !== null ? me.announced : '?';
+        let pipsHtml = '';
+        for (let pi = 0; pi < size; pi++) {
+          pipsHtml += `<div class="tc-pip${pi < myTricksWon ? ' won' : ''}"></div>`;
+        }
+        trickCounterEl.innerHTML = `
+          <div class="tc-label">PLIS</div>
+          <div class="tc-pips">${pipsHtml}</div>
+          <div class="tc-score-txt">${myTricksWon}/${myAnnounced}</div>
+        `;
       } else {
-        document.getElementById('trick-counter').style.display = 'none';
+        trickCounterEl.style.display = 'none';
       }
 
       // ── Player seats ──
@@ -1578,9 +1761,34 @@
           `<div class="life-pip${j >= p.lives ? ' lost' : ''}" style="background:${p.color};"></div>`
         ).join('');
 
-        const annTxt = p.announced !== null
-          ? `${p.announced} ann · ${p.tricksWon} fait`
-          : '';
+        // Build visual score pill
+        let scorePillHtml = '';
+        if (p.announced !== null) {
+          const ann = p.announced;
+          const done = p.tricksWon;
+          const maxPips = Math.max(ann, done, 1);
+          let pipHtml = '';
+          for (let pi = 0; pi < maxPips; pi++) {
+            const isDone = pi < done;
+            const isOver = isDone && pi >= ann; // won more than announced
+            pipHtml += `<div class="sst-pip${isDone ? (isOver ? ' over' : ' done') : ''}"></div>`;
+          }
+          const diff = done - ann;
+          const badgeCls = diff === 0 ? 'ssb-ok' : 'ssb-bad';
+          const badgeTxt = diff === 0 ? '✓' : (diff > 0 ? `+${diff}` : `${diff}`);
+          scorePillHtml = `
+            <div class="seat-score">
+              <div class="seat-score-nums">
+                <span class="seat-score-done">${done}</span>
+                <span class="seat-score-sep">/</span>
+                <span class="seat-score-ann">${ann}</span>
+                <span class="seat-score-badge ${badgeCls}">${badgeTxt}</span>
+              </div>
+              <div class="seat-score-track">${pipHtml}</div>
+            </div>`;
+        } else {
+          scorePillHtml = `<div class="seat-score"><span class="ssb-wait" style="font-family:'Cinzel',serif;font-size:.5rem;letter-spacing:1px;">…</span></div>`;
+        }
 
         const handCount = p.hand?.length || 0;
         const miniCards = gs.oneCardSpecial && p.hand
@@ -1597,7 +1805,7 @@
       <div class="seat-avatar${isActive ? ' active-turn' : ''}${isDealer ? ' dealer' : ''}" style="background:${p.color};">${initials}</div>
       <div class="seat-name" style="color:${p.color};">${p.name}</div>
       <div class="seat-lives">${pips}</div>
-      ${annTxt ? `<div class="seat-ann">${annTxt}</div>` : ''}
+      ${gs.phase === 'play' || gs.phase === 'score' ? scorePillHtml : ''}
     `;
         center.appendChild(seat);
       });
@@ -1605,22 +1813,20 @@
       // ── Trick zone — cartes empilées avec rotation/offset ──
       // FIX: on empile les cartes au lieu de les afficher côte à côte
       const trickZone = document.getElementById('trick-zone');
-      trickZone.innerHTML = '';
-      if (gs.currentTrick?.length > 0) {
-        // Offsets prédéfinis pour simuler un jet naturel
+
+      const renderTrickCards = (trick, players) => {
+        trickZone.innerHTML = '';
+        if (!trick || trick.length === 0) return;
         const rots = [-7, 6, -4, 9, -5];
         const offsX = [-8, 10, -5, 7, -3];
         const offsY = [-3, 7, -6, 4, -8];
-
-        gs.currentTrick.forEach((t, idx) => {
-          const p = gs.players[t.playerIdx];
+        trick.forEach((t, idx) => {
+          const p = players[t.playerIdx];
           const rot = rots[idx % rots.length];
           const ox = offsX[idx % offsX.length];
           const oy = offsY[idx % offsY.length];
-
           const wrap = document.createElement('div');
           wrap.className = 'trick-card-wrap';
-          // Centré dans la zone, puis décalé + tourné
           wrap.style.cssText = `
             margin-left: calc(-1 * var(--card-w) / 2);
             margin-top:  calc(-1 * var(--card-h) / 2);
@@ -1633,6 +1839,38 @@
           `;
           trickZone.appendChild(wrap);
         });
+      };
+
+      // If trick just finished (currentTrick empty but lastTrick exists), show it briefly
+      const prevTrickKey = 'lastRenderedTrick_' + myRoom;
+      const prevTrickStr = sessionStorage.getItem(prevTrickKey);
+      const prevTrick = prevTrickStr ? JSON.parse(prevTrickStr) : null;
+
+      if (gs.currentTrick?.length > 0) {
+        // Active trick being played
+        sessionStorage.setItem(prevTrickKey, JSON.stringify({ trick: gs.currentTrick, players: gs.players }));
+        renderTrickCards(gs.currentTrick, gs.players);
+      } else if (prevTrick && gs.tricksPlayed > 0) {
+        // Trick just ended — show last trick for 2s then clear
+        const winnerId = gs.lastTrickWinner;
+        const winnerP = winnerId !== undefined ? gs.players[winnerId] : null;
+        renderTrickCards(prevTrick.trick, prevTrick.players);
+        // Badge announcing winner
+        if (winnerP) {
+          const overlay = document.createElement('div');
+          overlay.className = 'trick-done-overlay';
+          overlay.innerHTML = `<div class="trick-done-badge">✓ Pli remporté par <span style="color:${winnerP.color}">${winnerP.name}</span></div>`;
+          trickZone.appendChild(overlay);
+        }
+        // Clear after 2.2s
+        clearTimeout(window._trickClearTimer);
+        window._trickClearTimer = setTimeout(() => {
+          trickZone.innerHTML = '';
+          sessionStorage.removeItem(prevTrickKey);
+        }, 2200);
+      } else {
+        trickZone.innerHTML = '';
+        sessionStorage.removeItem(prevTrickKey);
       }
 
       // ── Excuse panel ──
