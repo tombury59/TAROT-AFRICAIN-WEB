@@ -609,7 +609,7 @@
     }
 
     .seat-score-sep {
-      color: rgba(255,255,255,.3);
+      color: rgba(255, 255, 255, .3);
       font-size: .55rem;
     }
 
@@ -630,7 +630,7 @@
       height: 7px;
       border-radius: 50%;
       border: 1.2px solid rgba(201, 168, 76, .4);
-      background: rgba(255,255,255,.07);
+      background: rgba(255, 255, 255, .07);
       transition: background .25s, border-color .25s, transform .2s;
     }
 
@@ -654,9 +654,17 @@
       padding: 1px 4px;
     }
 
-    .ssb-ok  { color: #5ec95e; }
-    .ssb-bad { color: #e57373; }
-    .ssb-wait { color: rgba(201,168,76,.7); }
+    .ssb-ok {
+      color: #5ec95e;
+    }
+
+    .ssb-bad {
+      color: #e57373;
+    }
+
+    .ssb-wait {
+      color: rgba(201, 168, 76, .7);
+    }
 
     /* ── Other players' hand (face-down) ── */
     .seat-hand-back {
@@ -834,8 +842,8 @@
       border-radius: 8px;
       border: 1px solid rgba(201, 168, 76, 0.5);
       line-height: 1;
-      text-shadow: 0 2px 4px rgba(0,0,0,1);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
       z-index: 2;
     }
 
@@ -882,7 +890,7 @@
       font-size: 2rem;
       font-weight: 900;
       color: #fff;
-      text-shadow: 0 2px 12px rgba(0,0,0,.8), 0 0 24px rgba(201,168,76,.5);
+      text-shadow: 0 2px 12px rgba(0, 0, 0, .8), 0 0 24px rgba(201, 168, 76, .5);
       line-height: 1;
       letter-spacing: 1px;
     }
@@ -961,7 +969,7 @@
       backdrop-filter: blur(10px);
       padding: .9rem 1.2rem 1rem;
       pointer-events: all;
-      box-shadow: 0 -4px 24px rgba(0,0,0,.5), inset 0 1px 0 rgba(201,168,76,.1);
+      box-shadow: 0 -4px 24px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(201, 168, 76, .1);
       margin: 0 auto;
     }
 
@@ -1015,50 +1023,150 @@
       opacity: .55;
     }
 
-    /* ── Excuse panel ── */
-    .excuse-panel {
-      background: rgba(50, 20, 80, .85);
-      border: 1px solid rgba(138, 26, 200, .5);
-      border-radius: 14px;
-      padding: .9rem 1.2rem;
-      text-align: center;
-      margin: 0 1rem .6rem;
-      backdrop-filter: blur(8px);
-      pointer-events: all;
-    }
-
-    .excuse-title {
-      color: #d4a0ff;
-      font-family: 'Cinzel', serif;
-      font-size: .7rem;
-      letter-spacing: 2px;
-      margin-bottom: .7rem;
-    }
-
-    .excuse-btns {
+    /* ══════════════════════════════════════════════════
+       EXCUSE MODAL — overlay fixe, centré, toujours cliquable
+    ══════════════════════════════════════════════════ */
+    #excuse-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 9000;
       display: flex;
-      gap: 10px;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, .55);
+      backdrop-filter: blur(4px);
+      pointer-events: all;
+      animation: fadeIn .22s ease;
+    }
+
+    #excuse-modal.hidden {
+      display: none;
+    }
+
+    .excuse-modal-box {
+      background: linear-gradient(160deg, #1a0a2e 0%, #0d0520 60%, #1a0a1a 100%);
+      border: 1.5px solid rgba(180, 80, 255, .5);
+      border-radius: 22px;
+      padding: 2rem 1.8rem 1.8rem;
+      width: min(340px, 90vw);
+      text-align: center;
+      box-shadow:
+        0 0 60px rgba(120, 30, 200, .35),
+        0 24px 60px rgba(0, 0, 0, .7),
+        inset 0 1px 0 rgba(200, 100, 255, .2);
+      animation: excuseSlideUp .3s cubic-bezier(.34, 1.56, .64, 1);
+    }
+
+    @keyframes excuseSlideUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px) scale(.94);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .excuse-modal-star {
+      font-size: 2.8rem;
+      line-height: 1;
+      margin-bottom: .5rem;
+      filter: drop-shadow(0 0 12px rgba(220, 150, 255, .7));
+    }
+
+    .excuse-modal-title {
+      font-family: 'Cinzel', serif;
+      font-size: .75rem;
+      letter-spacing: 3px;
+      color: #d4a0ff;
+      margin-bottom: .3rem;
+      text-transform: uppercase;
+    }
+
+    .excuse-modal-desc {
+      font-size: .82rem;
+      color: rgba(245, 234, 213, .6);
+      margin-bottom: 1.5rem;
+      font-style: italic;
+      line-height: 1.4;
+    }
+
+    .excuse-modal-btns {
+      display: flex;
+      gap: 12px;
       justify-content: center;
     }
 
-    .excuse-choice-btn {
+    .excuse-modal-btn {
       flex: 1;
-      max-width: 160px;
-      padding: .6rem .8rem;
-      border-radius: 10px;
-      border: 1.5px solid rgba(201, 168, 76, .3);
-      background: rgba(0, 0, 0, .4);
+      /* Touch target: au moins 56px de hauteur */
+      min-height: 64px;
+      border-radius: 14px;
+      border: 1.5px solid rgba(200, 100, 255, .4);
+      background: rgba(255, 255, 255, .05);
       color: var(--cream);
       font-family: 'Cinzel', serif;
-      font-size: .72rem;
-      letter-spacing: .5px;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 1px;
       cursor: pointer;
-      transition: all .18s;
+      transition: all .2s cubic-bezier(.34, 1.56, .64, 1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: .8rem .5rem;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    .excuse-choice-btn:hover {
-      background: rgba(201, 168, 76, .12);
-      border-color: var(--gold);
+    .excuse-modal-btn:hover,
+    .excuse-modal-btn:active {
+      background: rgba(180, 80, 255, .2);
+      border-color: rgba(200, 100, 255, .8);
+      transform: translateY(-3px) scale(1.04);
+      box-shadow: 0 8px 24px rgba(120, 30, 200, .4);
+    }
+
+    .excuse-modal-btn:active {
+      transform: translateY(0) scale(1);
+    }
+
+    .excuse-modal-btn-val {
+      font-size: 1.8rem;
+      font-weight: 900;
+      color: #d4a0ff;
+      line-height: 1;
+    }
+
+    .excuse-modal-btn-sub {
+      font-size: .58rem;
+      letter-spacing: 1px;
+      color: rgba(245, 234, 213, .4);
+      font-family: 'Crimson Pro', serif;
+      font-weight: 400;
+      font-style: italic;
+    }
+
+    /* Waiting excuse pill (pour les autres joueurs) */
+    .excuse-waiting-pill {
+      position: fixed;
+      bottom: calc(env(safe-area-inset-bottom, 8px) + 240px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(50, 20, 80, .88);
+      border: 1px solid rgba(180, 80, 255, .4);
+      border-radius: 20px;
+      padding: .4rem 1.2rem;
+      font-size: .72rem;
+      color: #d4a0ff;
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 8000;
+      backdrop-filter: blur(4px);
+      font-style: italic;
     }
 
     /* ── Score panel ── */
@@ -1222,7 +1330,7 @@
       z-index: 15;
       backdrop-filter: blur(6px);
       min-width: 58px;
-      box-shadow: 0 4px 16px rgba(0,0,0,.5), inset 0 1px 0 rgba(201,168,76,.1);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(201, 168, 76, .1);
     }
 
     .tc-label {
@@ -1247,14 +1355,14 @@
       height: 10px;
       border-radius: 50%;
       border: 1.5px solid rgba(201, 168, 76, .35);
-      background: rgba(255,255,255,.06);
+      background: rgba(255, 255, 255, .06);
       transition: background .3s, border-color .3s, transform .25s;
     }
 
     .tc-pip.won {
       background: var(--gold);
       border-color: var(--gold-light);
-      box-shadow: 0 0 6px rgba(201,168,76,.6);
+      box-shadow: 0 0 6px rgba(201, 168, 76, .6);
       transform: scale(1.15);
     }
 
@@ -1280,8 +1388,8 @@
     }
 
     .trick-done-badge {
-      background: rgba(0,0,0,.78);
-      border: 1px solid rgba(201,168,76,.45);
+      background: rgba(0, 0, 0, .78);
+      border: 1px solid rgba(201, 168, 76, .45);
       border-radius: 16px;
       padding: .4rem 1.1rem;
       font-family: 'Cinzel', serif;
@@ -1290,15 +1398,26 @@
       color: var(--gold-light);
       white-space: nowrap;
       backdrop-filter: blur(4px);
-      box-shadow: 0 4px 18px rgba(0,0,0,.6);
+      box-shadow: 0 4px 18px rgba(0, 0, 0, .6);
       transform: translateY(-48px);
     }
 
     @keyframes trickDoneFade {
-      0%   { opacity: 0; }
-      12%  { opacity: 1; }
-      70%  { opacity: 1; }
-      100% { opacity: 0; }
+      0% {
+        opacity: 0;
+      }
+
+      12% {
+        opacity: 1;
+      }
+
+      70% {
+        opacity: 1;
+      }
+
+      100% {
+        opacity: 0;
+      }
     }
 
     /* ═══════════════════════════════════════════════
@@ -1398,6 +1517,14 @@
         width: 44px;
         height: 44px;
         font-size: 1rem;
+      }
+
+      .excuse-modal-btn {
+        min-height: 72px;
+      }
+
+      .excuse-modal-btn-val {
+        font-size: 2rem;
       }
     }
 
@@ -1511,7 +1638,6 @@
       <div class="log-strip" id="log-strip"></div>
       <div class="waiting-pill" id="waiting-pill" style="display:none;"></div>
       <div id="score-overlay-wrap"></div>
-      <div id="excuse-panel-wrap"></div>
 
       <div class="bottom-panel">
         <div id="ann-panel" class="action-panel" style="display:none;"></div>
@@ -1520,6 +1646,29 @@
           <div class="my-hand-label">VOTRE MAIN</div>
           <div class="hand-fan" id="my-hand"></div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ EXCUSE MODAL (global, hors de tout conteneur) ═══════════════ -->
+  <!--
+    Positionné en dehors du #game pour éviter tout conflit de z-index ou de
+    pointer-events. Il est affiché/masqué via JS.
+  -->
+  <div id="excuse-modal" class="hidden">
+    <div class="excuse-modal-box">
+      <div class="excuse-modal-star">⭐</div>
+      <div class="excuse-modal-title">L'Excuse</div>
+      <div class="excuse-modal-desc">Choisissez la valeur que prendra l'Excuse dans ce pli</div>
+      <div class="excuse-modal-btns">
+        <button class="excuse-modal-btn" onclick="resolveExcuse(0)">
+          <span class="excuse-modal-btn-val">0</span>
+          <span class="excuse-modal-btn-sub">la plus faible</span>
+        </button>
+        <button class="excuse-modal-btn" onclick="resolveExcuse(22)">
+          <span class="excuse-modal-btn-val">22</span>
+          <span class="excuse-modal-btn-sub">la plus forte</span>
+        </button>
       </div>
     </div>
   </div>
@@ -1681,14 +1830,11 @@
 
     // ══════════════════════════════════════
     // Card rendering
-    // FIX: excuse uses 0.jpg (not excuse.jpg)
     // ══════════════════════════════════════
     function cardHTML(card, opts = {}) {
       const { clickable = false, clickFn = '' } = opts;
-      // Compute display label for hover veil
       const hoverLabel = !card || card.hidden ? '' : (card.isExcuse ? '★' : String(card.value));
 
-      // ── Dos de carte ──
       if (!card || card.hidden) {
         return `<div class="tcard tcard-back">
       <div class="tcard-face" style="padding:0;overflow:hidden;background:#fff;">
@@ -1699,7 +1845,6 @@
     </div>`;
       }
 
-      // FIX: l'Excuse utilise 0.jpg
       const imgFile = card.isExcuse ? '0.jpg' : `${card.value}.jpg`;
 
       const evLabel = card.isExcuse && card.effectiveValue !== null && card.effectiveValue !== undefined
@@ -1720,6 +1865,16 @@
       <div class="card-hover-veil"><span class="card-hover-veil-val">${hoverLabel}</span></div>
     </div>
   </div>`;
+    }
+
+    // ══════════════════════════════════════
+    // Excuse modal helpers
+    // ══════════════════════════════════════
+    function showExcuseModal() {
+      document.getElementById('excuse-modal').classList.remove('hidden');
+    }
+    function hideExcuseModal() {
+      document.getElementById('excuse-modal').classList.add('hidden');
     }
 
     // ══════════════════════════════════════
@@ -1759,7 +1914,7 @@
       // One-card banner
       document.getElementById('onecard-banner').style.display = gs.oneCardSpecial ? 'block' : 'none';
 
-      // Trick counter — visual pips
+      // Trick counter
       const trickCounterEl = document.getElementById('trick-counter');
       if (gs.phase === 'play') {
         trickCounterEl.style.display = 'block';
@@ -1795,7 +1950,6 @@
           `<div class="life-pip${j >= p.lives ? ' lost' : ''}" style="background:${p.color};"></div>`
         ).join('');
 
-        // Build visual score pill
         let scorePillHtml = '';
         if (p.announced !== null) {
           const ann = p.announced;
@@ -1804,7 +1958,7 @@
           let pipHtml = '';
           for (let pi = 0; pi < maxPips; pi++) {
             const isDone = pi < done;
-            const isOver = isDone && pi >= ann; // won more than announced
+            const isOver = isDone && pi >= ann;
             pipHtml += `<div class="sst-pip${isDone ? (isOver ? ' over' : ' done') : ''}"></div>`;
           }
           const diff = done - ann;
@@ -1844,8 +1998,7 @@
         center.appendChild(seat);
       });
 
-      // ── Trick zone — cartes empilées avec rotation/offset ──
-      // FIX: on empile les cartes au lieu de les afficher côte à côte
+      // ── Trick zone ──
       const trickZone = document.getElementById('trick-zone');
 
       const renderTrickCards = (trick, players) => {
@@ -1875,28 +2028,23 @@
         });
       };
 
-      // If trick just finished (currentTrick empty but lastTrick exists), show it briefly
       const prevTrickKey = 'lastRenderedTrick_' + myRoom;
       const prevTrickStr = sessionStorage.getItem(prevTrickKey);
       const prevTrick = prevTrickStr ? JSON.parse(prevTrickStr) : null;
 
       if (gs.currentTrick?.length > 0) {
-        // Active trick being played
         sessionStorage.setItem(prevTrickKey, JSON.stringify({ trick: gs.currentTrick, players: gs.players }));
         renderTrickCards(gs.currentTrick, gs.players);
       } else if (prevTrick && gs.tricksPlayed > 0) {
-        // Trick just ended — show last trick for 2s then clear
         const winnerId = gs.lastTrickWinner;
         const winnerP = winnerId !== undefined ? gs.players[winnerId] : null;
         renderTrickCards(prevTrick.trick, prevTrick.players);
-        // Badge announcing winner
         if (winnerP) {
           const overlay = document.createElement('div');
           overlay.className = 'trick-done-overlay';
           overlay.innerHTML = `<div class="trick-done-badge">✓ Pli remporté par <span style="color:${winnerP.color}">${winnerP.name}</span></div>`;
           trickZone.appendChild(overlay);
         }
-        // Clear after 2.2s
         clearTimeout(window._trickClearTimer);
         window._trickClearTimer = setTimeout(() => {
           trickZone.innerHTML = '';
@@ -1907,25 +2055,31 @@
         sessionStorage.removeItem(prevTrickKey);
       }
 
-      // ── Excuse panel ──
-      const excuseWrap = document.getElementById('excuse-panel-wrap');
+      // ── Excuse modal — affiche le modal global si c'est mon tour de choisir ──
       if (gs.excuseWaiting && gs.excuseWaiting.playerIdx === gs.myIdx) {
-        excuseWrap.innerHTML = `
-      <div class="excuse-panel">
-        <div class="excuse-title">⭐ L'EXCUSE — Choisissez sa valeur</div>
-        <div class="excuse-btns">
-          <button class="excuse-choice-btn" onclick="resolveExcuse(0)">Valeur 0<br><span style="font-size:.6rem;opacity:.6;">la plus faible</span></button>
-          <button class="excuse-choice-btn" onclick="resolveExcuse(22)">Valeur 22<br><span style="font-size:.6rem;opacity:.6;">la plus forte</span></button>
-        </div>
-      </div>`;
-      } else if (gs.excuseWaiting) {
-        excuseWrap.innerHTML = `<div class="waiting-pill" style="position:static;transform:none;margin:.4rem auto;display:block;text-align:center;">⭐ ${gs.players[gs.excuseWaiting.playerIdx]?.name} choisit la valeur de l'Excuse…</div>`;
+        showExcuseModal();
       } else {
-        excuseWrap.innerHTML = '';
+        hideExcuseModal();
       }
 
-      // ── Announce panel — redesigned ──
-      // FIX: nouveaux boutons élégants avec hover animé et chiffre interdit barré
+      // Pill d'attente pour les autres quand quelqu'un choisit l'Excuse
+      // (on réutilise l'ancien #excuse-panel-wrap pour la pill, réintégré ici)
+      let excuseWaitPill = document.getElementById('excuse-wait-pill');
+      if (!excuseWaitPill) {
+        excuseWaitPill = document.createElement('div');
+        excuseWaitPill.id = 'excuse-wait-pill';
+        excuseWaitPill.className = 'excuse-waiting-pill';
+        document.body.appendChild(excuseWaitPill);
+      }
+      if (gs.excuseWaiting && gs.excuseWaiting.playerIdx !== gs.myIdx) {
+        const waitName = gs.players[gs.excuseWaiting.playerIdx]?.name || '…';
+        excuseWaitPill.textContent = `⭐ ${waitName} choisit la valeur de l'Excuse…`;
+        excuseWaitPill.style.display = 'block';
+      } else {
+        excuseWaitPill.style.display = 'none';
+      }
+
+      // ── Announce panel ──
       const annPanel = document.getElementById('ann-panel');
       if (gs.phase === 'announce' && isMyAnnounceTurn) {
         const remaining = gs.players.filter(p => p.announced === null).length;
@@ -2004,7 +2158,6 @@
         });
         myHand.innerHTML = cards.join('');
 
-        // Fan effect
         const items = myHand.querySelectorAll('.tcard');
         const total = items.length;
         items.forEach((card, i) => {
@@ -2075,7 +2228,10 @@
     // ══════════════════════════════════════
     function doAnnounce(num) { socket.emit('announce', { num }); }
     function doPlayCard(cardId) { socket.emit('play_card', { cardId }); }
-    function resolveExcuse(value) { socket.emit('resolve_excuse', { value }); }
+    function resolveExcuse(value) {
+      hideExcuseModal();
+      socket.emit('resolve_excuse', { value });
+    }
     function doNextRound() { socket.emit('next_round'); }
 
     // ══════════════════════════════════════
