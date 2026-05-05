@@ -785,11 +785,13 @@
     }
 
     .my-hand-wrap {
+      --card-w: 135px;
+      --card-h: 202px;
       position: relative;
       display: flex;
       justify-content: center;
       padding: 8px 0 0;
-      min-height: 185px;
+      min-height: 220px;
     }
 
     .my-hand-label {
@@ -816,6 +818,25 @@
       flex-shrink: 0;
       user-select: none;
       will-change: transform;
+    }
+
+    .card-center-val {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.75);
+      color: #fff;
+      font-family: 'Cinzel', serif;
+      font-size: 1.4rem;
+      font-weight: 900;
+      padding: 6px 14px;
+      border-radius: 8px;
+      border: 1px solid rgba(201, 168, 76, 0.5);
+      line-height: 1;
+      text-shadow: 0 2px 4px rgba(0,0,0,1);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+      z-index: 2;
     }
 
     .tcard-face {
@@ -923,11 +944,11 @@
       justify-content: center;
       align-items: flex-end;
       position: relative;
-      height: 175px;
+      height: 215px;
     }
 
     .hand-fan .tcard {
-      margin: 0 -14px;
+      margin: 0 -18px;
     }
 
     /* ── Announce panel — redesigned ── */
@@ -1359,12 +1380,18 @@
         --card-h: 123px;
       }
 
-      .hand-fan {
-        height: 133px;
+      .my-hand-wrap {
+        --card-w: 100px;
+        --card-h: 150px;
+        min-height: 170px;
       }
 
-      .my-hand-wrap {
-        min-height: 143px;
+      .hand-fan {
+        height: 160px;
+      }
+
+      .hand-fan .tcard {
+        margin: 0 -15px;
       }
 
       .ann-num-btn {
@@ -1380,12 +1407,18 @@
         --card-h: 105px;
       }
 
-      .hand-fan {
-        height: 115px;
+      .my-hand-wrap {
+        --card-w: 85px;
+        --card-h: 127px;
+        min-height: 145px;
       }
 
-      .my-hand-wrap {
-        min-height: 125px;
+      .hand-fan {
+        height: 135px;
+      }
+
+      .hand-fan .tcard {
+        margin: 0 -12px;
       }
 
       .ann-num-btn {
@@ -1675,6 +1708,7 @@
 
       return `<div class="tcard${clickable ? ' playable' : ' not-playable'}" ${clickFn ? `onclick="${clickFn}"` : ''}>
     <div class="tcard-face" style="padding:0;overflow:hidden;background:#fff;position:relative;">
+      <div class="card-center-val">${hoverLabel}</div>
       <img src="/cards/${imgFile}" draggable="false"
         style="width:100%;height:100%;object-fit:cover;border-radius:6px;display:block;"
         onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
