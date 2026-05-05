@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Tarot Africain</title>
+<script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+<style>
+:root {
+  --gold: #c9a84c;
+  --gold-light: #e8c87a;
+  --gold-dark: #8b6914;
+  --deep-green: #1a2e1a;
+  --green: #2d4a2d;
+  --cream: #f5ecd7;
+  --cream-dark: #e0c990;
+  --red: #8b1a1a;
+  --red-light: #c53030;
+  --bg: #0f1a0f;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+
+body {
+  font-family: 'Georgia', serif;
+  background: radial-gradient(ellipse at 50% 30%, #243a24 0%, #142014 50%, #0a120a 100%);
+  color: var(--cream);
+  min-height: 100vh;
+  overflow-y: auto;
+}
+
+/* ── SCREENS ── */
+.screen { display: none; min-height: 100vh; }
+.screen.active { display: flex; flex-direction: column; }
+
+/* ── HEADER ── */
+.hdr {
+  background: rgba(0,0,0,.55);
+  border-bottom: 1px solid rgba(201,168,76,.25);
+  padding: .55rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.hdr-title {
+  font-size: 1rem;
+  letter-spacing: 2px;
+  color: var(--gold);
+  font-weight: bold;
+}
+.hdr-sub { font-size: .72rem; color: var(--cream-dark); opacity: .7; }
+
+/* ── LOBBY / SETUP ── */
+#home {
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+.big-title {
+  font-size: clamp(2rem, 7vw, 3.2rem);
+  font-weight: 900;
+  color: var(--gold);
+  text-align: center;
+  letter-spacing: 3px;
+  line-height: 1.1;
+  text-shadow: 0 0 40px rgba(201,168,76,.35);
+}
+.sub-title {
+  font-style: italic;
+  color: var(--cream-dark);
+  opacity: .75;
+  text-align: center;
+  margin: .4rem 0 1.6rem;
+  font-size: .95rem;
+}
+.gold-line {
+  width: 100px; height: 1px;
+  background: linear-gradient(to right, transparent, var(--gold), transparent);
+  margin: .8rem auto 1.6rem;
+}
+
+.card-box {
+  background: rgba(0,0,0,.45);
+  border: 1px solid rgba(201,168,76,.28);
+  border-radius: 14px;
+  padding: 1.6rem;
+  width: 100%;
+  max-width: 420px;
+}
+.card-box h2 {
+  font-size: .78rem;
+  letter-spacing: 2px;
+  color: var(--gold-light);
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+}
+
+.inp {
+  width: 100%;
+  background: rgba(255,255,255,.07);
+  border: 1px solid rgba(201,168,76,.22);
+  border-radius: 8px;
+  color: var(--cream);
+  font-family: Georgia, serif;
+  font-size: 1rem;
+  padding: .55rem .85rem;
+  outline: none;
+  transition: border-color .2s;
+  margin-bottom: .75rem;
+}
+.inp:focus { border-color: var(--gold); }
+.inp::placeholder { color: rgba(245,236,215,.3); }
+
+.color-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1rem; }
+.color-swatch {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: transform .15s, border-color .15s;
+}
+.color-swatch.picked { border-color: var(--gold-light); transform: scale(1.18); }
+.color-swatch.taken { opacity: .22; cursor: not-allowed; }
+
+.btn-gold {
+  width: 100%;
+  padding: .75rem;
+  background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+  border: none;
+  border-radius: 9px;
+  color: var(--deep-green);
+  font-family: Georgia, serif;
+  font-size: 1rem;
+  font-weight: bold;
+  letter-spacing: .5px;
+  cursor: pointer;
+  transition: filter .2s, transform .15s;
+  margin-bottom: .6rem;
+}
+.btn-gold:hover { filter: brightness(1.12); transform: translateY(-1px); }
+.btn-gold:disabled { opacity: .38; cursor: not-allowed; transform: none; filter: none; }
+.btn-ghost {
+  width: 100%;
+  padding: .65rem;
+  background: transparent;
+  border: 1px solid rgba(201,168,76,.32);
+  border-radius: 9px;
+  color: var(--gold-light);
+  font-family: Georgia, serif;
+  font-size: .9rem;
+  cursor: pointer;
+  transition: background .2s;
+}
+.btn-ghost:hover { background: rgba(201,168,76,.1); }
+.sep { text-align: center; color: var(--cream-dark); opacity: .4; font-size: .8rem; margin: .6rem 0; }
+
+/* ── WAITING LOBBY ── */
+#lobby {
+  align-items: center;
+  padding: 1.5rem 1rem;
+}
+.room-code {
+  font-size: 3rem;
+  font-weight: 900;
+  color: var(--gold);
+  letter-spacing: 8px;
+  text-align: center;
+  font-family: 'Courier New', monospace;
+}
+.lobby-players { width: 100%; max-width: 400px; margin: 1rem 0; }
+.lobby-player {
+  display: flex; align-items: center; gap: 10px;
+  padding: .55rem .8rem;
+  background: rgba(0,0,0,.3);
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,.06);
+  margin-bottom: 6px;
+  font-size: .9rem;
+}
+.lp-dot { width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0; }
+.lp-host { font-size: .65rem; color: var(--gold); margin-left: auto; letter-spacing: 1px; }
+.lp-dc { opacity: .35; font-style: italic; }
+
+/* ── GAME SCREEN ── */
+#game { flex-direction: column; }
+
+/* Players bar */
+.players-bar {
+  display: flex; gap: 6px;
+  padding: .55rem .8rem;
+  overflow-x: auto;
+  background: rgba(0,0,0,.38);
+  border-bottom: 1px solid rgba(201,168,76,.15);
+  flex-shrink: 0;
+}
+.pchip {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: .35rem .55rem;
+  border-radius: 9px;
+  border: 1.5px solid transparent;
+  min-width: 68px;
+  transition: border-color .2s, background .2s;
+  position: relative;
+}
+.pchip.active { border-color: var(--gold); background: rgba(201,168,76,.1); }
+.pchip.dealer::after {
+  content: 'D';
+  position: absolute; top: -7px; right: -7px;
+  width: 16px; height: 16px;
+  background: var(--gold); color: var(--deep-green);
+  border-radius: 50%; font-size: 9px; font-weight: bold;
+  display: flex; align-items: center; justify-content: center;
+}
+.pchip-name { font-size: .7rem; font-weight: bold; white-space: nowrap; }
+.pchip-lives { display: flex; flex-wrap: wrap; gap: 2px; justify-content: center; max-width: 68px; }
+.life-dot { width: 7px; height: 7px; border-radius: 50%; transition: opacity .3s; }
+.life-dot.lost { opacity: .12; }
+.pchip-ann { font-size: .62rem; color: var(--gold-light); font-style: italic; }
+
+/* Table */
+.table {
+  flex: 1; overflow-y: auto;
+  padding: .7rem;
+  display: flex; flex-direction: column; gap: .7rem;
+}
+
+/* Phase banner */
+.phase-box {
+  background: rgba(0,0,0,.3);
+  border: 1px solid rgba(201,168,76,.2);
+  border-radius: 9px;
+  padding: .55rem 1rem;
+  text-align: center;
+}
+.phase-title { color: var(--gold-light); font-size: .88rem; letter-spacing: 1px; }
+.phase-desc { font-size: .76rem; color: var(--cream-dark); opacity: .75; margin-top: 2px; }
+
+/* Trick */
+.trick-box {
+  background: rgba(0,0,0,.22);
+  border: 1px dashed rgba(201,168,76,.18);
+  border-radius: 11px;
+  padding: .65rem;
+  min-height: 100px;
+}
+.sec-label { font-size: .68rem; letter-spacing: 1.5px; color: var(--gold); opacity: .82; text-transform: uppercase; margin-bottom: .45rem; }
+.trick-cards { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
+.trick-wrap { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.trick-lbl { font-size: .62rem; color: var(--cream-dark); opacity: .7; white-space: nowrap; }
+
+/* Cards */
+.cards-row { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.tcard {
+  width: 56px; height: 84px;
+  background: #f0e8d0;
+  border-radius: 6px;
+  border: 2px solid #d8c898;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: transform .15s, border-color .15s, box-shadow .15s;
+  position: relative;
+  box-shadow: 2px 3px 7px rgba(0,0,0,.55);
+  flex-shrink: 0;
+  user-select: none;
+}
+.tcard:hover { transform: translateY(-5px); border-color: var(--gold); box-shadow: 2px 7px 18px rgba(0,0,0,.6); }
+.tcard.mine-turn { border-color: #e8c000; box-shadow: 0 0 10px rgba(232,192,0,.4); }
+.tcard.not-turn { cursor: default; }
+.tcard.not-turn:hover { transform: none; border-color: #d8c898; box-shadow: 2px 3px 7px rgba(0,0,0,.55); }
+.tcard.excuse-c { background: linear-gradient(135deg, #fffff0 0%, #f0e8d0 100%); }
+.tcard-back {
+  background: linear-gradient(135deg, #1a3a6e 0%, #2d1a6e 50%, #6e1a3a 100%);
+  border: 2px solid rgba(201,168,76,.45);
+  cursor: default;
+}
+.tcard-back:hover { transform: none; }
+.tcard-num {
+  font-size: 1.25rem; font-weight: 900;
+  color: #1a2e1a; line-height: 1;
+}
+.tcard-sym { font-size: 1.1rem; margin-top: 1px; line-height: 1; }
+.tcard-corner {
+  position: absolute; top: 3px; left: 4px;
+  font-size: .56rem; font-weight: bold; color: #1a2e1a;
+  line-height: 1.2;
+}
+.tcard-back-inner {
+  width: 38px; height: 66px;
+  border: 1px solid rgba(201,168,76,.35);
+  border-radius: 3px;
+  background: repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(201,168,76,.07) 3px, rgba(201,168,76,.07) 6px);
+}
+
+/* Announce panel */
+.ann-panel {
+  background: rgba(0,0,0,.32);
+  border: 1px solid rgba(201,168,76,.22);
+  border-radius: 10px;
+  padding: 1rem;
+}
+.ann-title { color: var(--gold-light); font-size: .88rem; text-align: center; margin-bottom: .65rem; letter-spacing: 1px; }
+.ann-who { font-size: .78rem; text-align: center; margin-bottom: .65rem; }
+.ann-btns { display: flex; flex-wrap: wrap; gap: 7px; justify-content: center; }
+.ann-btn {
+  width: 44px; height: 44px;
+  border-radius: 8px;
+  border: 1.5px solid rgba(201,168,76,.3);
+  background: rgba(0,0,0,.3);
+  color: var(--cream);
+  font-family: Georgia, serif; font-size: 1.05rem; font-weight: bold;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.ann-btn:hover { background: rgba(201,168,76,.15); border-color: var(--gold); color: var(--gold-light); }
+.ann-btn.forbidden { opacity: .14; cursor: not-allowed; border-color: var(--red); }
+.ann-btn:disabled { cursor: not-allowed; }
+.ann-forbidden-note { font-size: .7rem; color: var(--red-light); text-align: center; margin-bottom: .5rem; opacity: .85; }
+
+/* Excuse */
+.excuse-panel {
+  background: rgba(74,26,110,.3);
+  border: 1px solid rgba(138,26,200,.38);
+  border-radius: 10px;
+  padding: 1rem;
+  text-align: center;
+}
+.excuse-title { color: #d4a0ff; font-size: .88rem; letter-spacing: 1px; margin-bottom: .65rem; }
+.excuse-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: .5rem; }
+.excuse-btn {
+  padding: .5rem 1.1rem;
+  border-radius: 8px;
+  border: 1.5px solid rgba(201,168,76,.3);
+  background: rgba(0,0,0,.3);
+  color: var(--cream);
+  font-family: Georgia, serif; font-size: .9rem;
+  cursor: pointer;
+  transition: background .15s;
+}
+.excuse-btn:hover { background: rgba(201,168,76,.12); border-color: var(--gold); }
+
+/* Score */
+.score-panel {
+  background: rgba(0,0,0,.4);
+  border: 1px solid rgba(201,168,76,.3);
+  border-radius: 11px;
+  padding: 1rem;
+}
+.score-title { color: var(--gold); font-size: 1rem; text-align: center; margin-bottom: .85rem; letter-spacing: 1px; }
+.score-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: .38rem 0;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+  font-size: .88rem;
+}
+.score-row:last-of-type { border-bottom: none; }
+.s-ok { color: #6db86d; font-weight: bold; }
+.s-bad { color: var(--red-light); font-weight: bold; }
+
+/* Log */
+.log-box {
+  background: rgba(0,0,0,.25);
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: 9px;
+  padding: .6rem .8rem;
+  max-height: 130px;
+  overflow-y: auto;
+}
+.log-line { font-size: .72rem; color: var(--cream-dark); opacity: .75; line-height: 1.7; }
+
+/* One-card notice */
+.onecard-note {
+  background: rgba(74,26,110,.28);
+  border: 1px solid rgba(138,26,200,.35);
+  border-radius: 8px;
+  padding: .5rem .9rem;
+  font-size: .76rem; color: #d4a0ff; text-align: center; font-style: italic;
+}
+
+/* End */
+#endscreen {
+  align-items: center; justify-content: center;
+  padding: 2rem 1rem;
+}
+.end-box {
+  background: rgba(0,0,0,.5);
+  border: 1px solid rgba(201,168,76,.4);
+  border-radius: 15px;
+  padding: 2rem; max-width: 400px; width: 100%; text-align: center;
+}
+.trophy { font-size: 3rem; }
+.winner { font-size: 2rem; font-weight: 900; margin: .4rem 0; letter-spacing: 1px; }
+
+/* Waiting */
+.waiting-msg {
+  text-align: center; padding: 1.5rem;
+  font-style: italic; color: var(--cream-dark); opacity: .65; font-size: .85rem;
+}
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 80px; left: 50%;
+  transform: translateX(-50%) translateY(16px);
+  background: rgba(0,0,0,.88); border: 1px solid rgba(201,168,76,.4);
+  border-radius: 8px; padding: .55rem 1.15rem;
+  color: var(--cream); font-size: .82rem;
+  opacity: 0; transition: all .3s;
+  pointer-events: none; z-index: 999; white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* Responsive tweaks */
+@media (max-width: 420px) {
+  .tcard { width: 48px; height: 72px; }
+  .tcard-num { font-size: 1.1rem; }
+  .ann-btn { width: 40px; height: 40px; font-size: .95rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── HOME ── -->
+<div id="home" class="screen active">
+  <div class="big-title">TAROT<br>AFRICAIN</div>
+  <div class="gold-line"></div>
+  <div class="sub-title">Multijoueur en ligne</div>
+
+  <div class="card-box">
+    <h2>Rejoindre la partie</h2>
+    <input class="inp" id="h-name" placeholder="Votre prénom" maxlength="18">
+    <div class="color-row" id="h-colors"></div>
+
+    <button class="btn-gold" id="btn-create" onclick="createRoom()">Créer un salon</button>
+    <div class="sep">— ou —</div>
+    <input class="inp" id="h-code" placeholder="Code du salon (ex: A1B2C3)" maxlength="6" style="text-transform:uppercase">
+    <button class="btn-gold" id="btn-join" onclick="joinRoom()">Rejoindre</button>
+  </div>
+</div>
+
+<!-- ── LOBBY ── -->
+<div id="lobby" class="screen">
+  <div style="text-align:center; margin: 1.5rem 0 .5rem;">
+    <div style="font-size:.75rem; letter-spacing:2px; color:var(--gold); opacity:.7; margin-bottom:.35rem;">CODE DU SALON</div>
+    <div class="room-code" id="room-code-display">——</div>
+    <div style="font-size:.72rem; color:var(--cream-dark); opacity:.55; margin-top:.3rem;">Partagez ce code avec vos potes</div>
+  </div>
+
+  <div class="lobby-players" id="lobby-players"></div>
+
+  <div style="max-width:400px; width:100%; padding:0 1rem;">
+    <div id="lobby-hint" style="font-size:.78rem; color:var(--cream-dark); opacity:.6; text-align:center; margin-bottom:.8rem;"></div>
+    <button class="btn-gold" id="btn-start" onclick="startGame()" style="display:none;">Lancer la partie ▶</button>
+  </div>
+</div>
+
+<!-- ── GAME ── -->
+<div id="game" class="screen">
+  <div class="hdr">
+    <div class="hdr-title">TAROT AFRICAIN</div>
+    <div class="hdr-sub" id="g-round-info">—</div>
+  </div>
+
+  <div class="players-bar" id="players-bar"></div>
+
+  <div class="table" id="table"></div>
+</div>
+
+<!-- ── END ── -->
+<div id="endscreen" class="screen">
+  <div class="end-box">
+    <div class="trophy">🏆</div>
+    <div style="font-size:.85rem; color:var(--cream-dark); opacity:.65;">Vainqueur</div>
+    <div class="winner" id="end-winner">—</div>
+    <div class="gold-line"></div>
+    <div id="end-scores"></div>
+    <div id="end-host-btns" style="margin-top:1rem; display:none;">
+      <button class="btn-gold" onclick="restartGame()">Nouvelle partie</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Config ──────────────────────────────────────────────────────────────────
+const COLORS = [
+  '#c53030','#2563eb','#16a34a','#ca8a04','#7c3aed',
+  '#db2777','#0891b2','#d97706','#059669','#dc2626'
+];
+const ROMAN = ['0','I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII','XIII','XIV','XV','XVI','XVII','XVIII','XIX','XX','XXI'];
+
+// ── State ───────────────────────────────────────────────────────────────────
+let socket, myId, myRoom, myColor = COLORS[0], myName = '';
+let lastState = null, isHost = false;
+
+// ── Init ────────────────────────────────────────────────────────────────────
+function initColorPicker(containerId, onPick) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  COLORS.forEach((c, i) => {
+    const s = document.createElement('div');
+    s.className = 'color-swatch' + (i === 0 ? ' picked' : '');
+    s.style.background = c;
+    s.onclick = () => {
+      el.querySelectorAll('.color-swatch').forEach(x => x.classList.remove('picked'));
+      s.classList.add('picked');
+      onPick(c);
+    };
+    el.appendChild(s);
+  });
+}
+
+initColorPicker('h-colors', c => { myColor = c; });
+
+// ── Socket ───────────────────────────────────────────────────────────────────
+function connectSocket() {
+  socket = io();
+
+  socket.on('joined', ({ code, playerId }) => {
+    myId = playerId;
+    myRoom = code;
+    document.getElementById('room-code-display').textContent = code;
+    showScreen('lobby');
+  });
+
+  socket.on('lobby_state', (data) => {
+    isHost = (socket.id === data.hostId);
+    renderLobby(data);
+    if (data.started && lastState) {
+      showScreen('game');
+    }
+  });
+
+  socket.on('game_state', (gs) => {
+    lastState = gs;
+    if (gs.phase === 'end') {
+      renderEnd(gs);
+      showScreen('endscreen');
+    } else {
+      showScreen('game');
+      renderGame(gs);
+    }
+  });
+
+  socket.on('error', (msg) => toast('⚠ ' + msg));
+}
+
+// ── Room actions ─────────────────────────────────────────────────────────────
+function createRoom() {
+  myName = document.getElementById('h-name').value.trim() || 'Hôte';
+  connectSocket();
+  socket.emit('create_room', { name: myName, color: myColor });
+}
+
+function joinRoom() {
+  const code = document.getElementById('h-code').value.trim().toUpperCase();
+  if (code.length !== 6) return toast('Code invalide (6 caractères)');
+  myName = document.getElementById('h-name').value.trim() || 'Joueur';
+  connectSocket();
+  socket.emit('join_room', { code, name: myName, color: myColor });
+}
+
+function startGame() {
+  socket.emit('start_game');
+}
+
+function restartGame() {
+  socket.emit('restart_game');
+  showScreen('lobby');
+}
+
+// ── Lobby render ─────────────────────────────────────────────────────────────
+function renderLobby(data) {
+  document.getElementById('room-code-display').textContent = data.code;
+  const el = document.getElementById('lobby-players');
+  el.innerHTML = data.players.map(p => `
+    <div class="lobby-player ${!p.ready ? 'lp-dc' : ''}">
+      <div class="lp-dot" style="background:${p.color};"></div>
+      <span>${p.name}</span>
+      ${p.id === data.hostId ? '<span class="lp-host">HÔTE</span>' : ''}
+      ${!p.ready ? '<span style="font-size:.62rem;opacity:.45;margin-left:auto">hors ligne</span>' : ''}
+    </div>
+  `).join('');
+
+  const n = data.players.length;
+  const hint = document.getElementById('lobby-hint');
+  const btn = document.getElementById('btn-start');
+
+  if (isHost) {
+    if (n < 3) hint.textContent = `En attente de joueurs… (${n}/3 minimum)`;
+    else hint.textContent = `${n} joueur${n>1?'s':''} — prêt à lancer !`;
+    btn.style.display = 'block';
+    btn.disabled = n < 3;
+  } else {
+    hint.textContent = `En attente que l'hôte lance la partie…`;
+    btn.style.display = 'none';
+  }
+}
+
+// ── Game render ───────────────────────────────────────────────────────────────
+function renderGame(gs) {
+  const size = gs.roundSize;
+  document.getElementById('g-round-info').textContent =
+    `Manche ${gs.roundIdx + 1} — ${size} carte${size>1?'s':''}`;
+
+  // Players bar
+  const bar = document.getElementById('players-bar');
+  bar.innerHTML = gs.players.map((p, i) => {
+    const isActive = (i === gs.currentPlayerIdx) && (gs.phase === 'play' || gs.phase === 'announce');
+    const isDealer = i === gs.dealerIdx;
+    const pips = Array.from({length:10},(_,j) => `<div class="life-dot${j>=p.lives?' lost':''}" style="background:${p.color};"></div>`).join('');
+    const annTxt = p.announced !== null ? `ann:${p.announced} / got:${p.tricksWon}` : '';
+    return `<div class="pchip${isActive?' active':''}${isDealer?' dealer':''}">
+      <div class="pchip-name" style="color:${p.color};">${p.name}${p.isMe?' (moi)':''}</div>
+      <div class="pchip-lives">${pips}</div>
+      ${annTxt ? `<div class="pchip-ann">${annTxt}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  const me = gs.players[gs.myIdx];
+  const isMyTurn = gs.myIdx === gs.currentPlayerIdx;
+  const isMyAnnounceTurn = gs.phase === 'announce' && gs.myIdx === gs.announceIdx;
+
+  let html = '';
+
+  // Phase banner
+  let phaseTxt = '', descTxt = '';
+  const activeName = gs.players[gs.currentPlayerIdx]?.name || '';
+  if (gs.phase === 'announce') {
+    phaseTxt = 'Phase d\'annonces';
+    descTxt = isMyAnnounceTurn ? '🎯 À vous d\'annoncer !' : `En attente de ${gs.players[gs.announceIdx]?.name}…`;
+  } else if (gs.phase === 'play') {
+    phaseTxt = 'Phase de jeu';
+    descTxt = isMyTurn ? '🎴 À vous de jouer !' : `Au tour de ${activeName}…`;
+  } else if (gs.phase === 'score') {
+    phaseTxt = 'Fin de manche';
+    descTxt = isHost ? 'Vérifiez les scores et continuez.' : 'En attente de l\'hôte…';
+  }
+
+  html += `<div class="phase-box">
+    <div class="phase-title">${phaseTxt}</div>
+    <div class="phase-desc">${descTxt}</div>
+  </div>`;
+
+  if (gs.oneCardSpecial) {
+    html += `<div class="onecard-note">⚠ Manche spéciale : vous voyez les cartes des autres, pas la vôtre !</div>`;
+  }
+
+  // Trick
+  if (gs.phase === 'play' || gs.currentTrick?.length > 0) {
+    const trickCards = (gs.currentTrick || []).map(t => {
+      const p = gs.players[t.playerIdx];
+      let ev = '';
+      if (t.card.isExcuse && t.card.effectiveValue !== null && t.card.effectiveValue !== undefined) {
+        ev = ` (=${t.card.effectiveValue})`;
+      }
+      return `<div class="trick-wrap">
+        ${renderCardEl(t.card, false, false)}
+        <div class="trick-lbl" style="color:${p.color};">${p.name}${ev}</div>
+      </div>`;
+    }).join('');
+
+    html += `<div class="trick-box">
+      <div class="sec-label">Pli en cours (${gs.tricksPlayed}/${size})</div>
+      <div class="trick-cards">${trickCards || '<div style="color:rgba(245,236,215,.32);font-size:.78rem;font-style:italic;">En attente…</div>'}</div>
+    </div>`;
+  }
+
+  // Excuse resolve
+  if (gs.excuseWaiting && gs.excuseWaiting.playerIdx === gs.myIdx) {
+    html += `<div class="excuse-panel">
+      <div class="excuse-title">⭐ L'Excuse — choisissez sa valeur</div>
+      <div class="excuse-btns">
+        <button class="excuse-btn" onclick="resolveExcuse(0)">Valeur 0 (la plus faible)</button>
+        <button class="excuse-btn" onclick="resolveExcuse(22)">Valeur 22 (la plus forte)</button>
+      </div>
+    </div>`;
+  } else if (gs.excuseWaiting) {
+    html += `<div class="waiting-msg">⭐ ${gs.players[gs.excuseWaiting.playerIdx]?.name} choisit la valeur de l'Excuse…</div>`;
+  }
+
+  // Announce panel
+  if (gs.phase === 'announce') {
+    if (isMyAnnounceTurn) {
+      const remaining = gs.players.filter(p => p.announced === null).length;
+      const isLast = remaining === 1;
+      const announced = gs.players.reduce((s,p) => s + (p.announced !== null ? p.announced : 0), 0);
+      const forbidden = isLast ? size - announced : -1;
+
+      const buttons = Array.from({length: size+1}, (_,i) => {
+        const isForbid = isLast && i === forbidden;
+        return `<button class="ann-btn${isForbid?' forbidden':''}" ${isForbid?'disabled':''} onclick="doAnnounce(${i})">${i}</button>`;
+      }).join('');
+
+      html += `<div class="ann-panel">
+        <div class="ann-title">Vos annonces</div>
+        ${isLast ? `<div class="ann-forbidden-note">Interdit : ${forbidden} (ferait total = ${size})</div>` : ''}
+        <div class="ann-btns">${buttons}</div>
+      </div>`;
+    } else {
+      const doneList = gs.players.filter(p => p.announced !== null).map(p => `${p.name}: ${p.announced}`).join(' — ');
+      if (doneList) html += `<div style="font-size:.74rem; color:var(--cream-dark); opacity:.65; text-align:center;">Annoncé : ${doneList}</div>`;
+    }
+  }
+
+  // My hand
+  if (gs.phase === 'play' || gs.phase === 'announce') {
+    const canPlay = gs.phase === 'play' && isMyTurn && !gs.excuseWaiting;
+
+    if (me.hand && me.hand.length > 0) {
+      const handHtml = me.hand.map((c, ci) => {
+        if (c.hidden) return renderCardBack();
+        return renderCardEl(c, canPlay, true, ci);
+      }).join('');
+      html += `<div>
+        <div class="sec-label" style="color:${me.color};">Votre main (${me.hand.length} carte${me.hand.length>1?'s':''})</div>
+        <div class="cards-row">${handHtml}</div>
+      </div>`;
+    } else if (gs.phase === 'play') {
+      html += `<div class="waiting-msg">Vous n'avez plus de cartes en main.</div>`;
+    }
+
+    // Show other players' hands (visible in 1-card round, or just counts otherwise)
+    if (gs.oneCardSpecial) {
+      gs.players.forEach((p, pi) => {
+        if (pi === gs.myIdx) return;
+        if (!p.hand || p.hand.length === 0) return;
+        const handHtml = p.hand.map((c) => renderCardEl(c, false, false)).join('');
+        html += `<div>
+          <div class="sec-label" style="color:${p.color};">${p.name}</div>
+          <div class="cards-row">${handHtml}</div>
+        </div>`;
+      });
+    }
+  }
+
+  // Score
+  if (gs.phase === 'score') {
+    const rows = gs.players.map(p => {
+      const diff = Math.abs((p.announced||0) - p.tricksWon);
+      const cls = diff === 0 ? 's-ok' : 's-bad';
+      const txt = diff === 0 ? '✓ Exact' : `-${diff} vie${diff>1?'s':''}`;
+      return `<div class="score-row">
+        <span style="color:${p.color};font-weight:bold;">${p.name}</span>
+        <span style="font-size:.78rem;opacity:.75;">ann:${p.announced} / fait:${p.tricksWon}</span>
+        <span class="${cls}">${txt}</span>
+      </div>`;
+    }).join('');
+
+    html += `<div class="score-panel">
+      <div class="score-title">Résultats</div>
+      ${rows}
+      ${isHost ? `<div style="display:flex;justify-content:center;margin-top:.9rem;">
+        <button class="btn-gold" style="width:auto;padding:.6rem 1.6rem;" onclick="doNextRound()">Manche suivante →</button>
+      </div>` : '<div class="waiting-msg">En attente de l\'hôte…</div>'}
+    </div>`;
+  }
+
+  // Log
+  if (gs.log && gs.log.length > 0) {
+    html += `<div class="log-box">
+      ${gs.log.map(l => `<div class="log-line">${l}</div>`).join('')}
+    </div>`;
+  }
+
+  document.getElementById('table').innerHTML = html;
+  // Scroll log to bottom
+  const log = document.querySelector('.log-box');
+  if (log) log.scrollTop = log.scrollHeight;
+}
+
+function renderCardEl(card, clickable, isMine, idx) {
+  if (card.hidden) return renderCardBack();
+  if (card.isExcuse) {
+    const cls = clickable ? 'mine-turn' : (isMine ? '' : '');
+    const onclick = clickable ? `onclick="doPlayCard('EXCUSE')"` : '';
+    return `<div class="tcard excuse-c ${cls}" ${onclick}>
+      <div class="tcard-corner">★</div>
+      <div class="tcard-num" style="font-size:1.5rem;">★</div>
+      <div style="font-size:.5rem;color:#8b6914;margin-top:2px;">EXCUSE</div>
+    </div>`;
+  }
+  const v = card.value;
+  const cls = clickable ? 'mine-turn' : (isMine ? '' : 'not-turn');
+  const onclick = clickable ? `onclick="doPlayCard('T${v}')"` : '';
+  return `<div class="tcard ${cls}" ${onclick}>
+    <div class="tcard-corner">${v}<br><span style="font-size:.5rem;font-style:italic;color:rgba(26,46,26,.45)">${ROMAN[v]||''}</span></div>
+    <div class="tcard-num">${v}</div>
+    <div class="tcard-sym">⚜</div>
+  </div>`;
+}
+
+function renderCardBack() {
+  return `<div class="tcard tcard-back"><div class="tcard-back-inner"></div></div>`;
+}
+
+// ── End render ────────────────────────────────────────────────────────────────
+function renderEnd(gs) {
+  const winner = gs.players.reduce((b, p) => p.lives > b.lives ? p : b, gs.players[0]);
+  const el = document.getElementById('end-winner');
+  el.textContent = winner.name;
+  el.style.color = winner.color;
+
+  const sorted = [...gs.players].sort((a,b) => b.lives - a.lives);
+  document.getElementById('end-scores').innerHTML = sorted.map((p,i) =>
+    `<div class="score-row" style="justify-content:space-between;">
+      <span style="color:${p.color};font-weight:bold;">${i===0?'🥇 ':''}${p.name}</span>
+      <span>${p.lives} vie${p.lives!==1?'s':''}</span>
+    </div>`
+  ).join('');
+
+  document.getElementById('end-host-btns').style.display = isHost ? 'block' : 'none';
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────────
+function doAnnounce(num) { socket.emit('announce', { num }); }
+function doPlayCard(cardId) { socket.emit('play_card', { cardId }); }
+function resolveExcuse(value) { socket.emit('resolve_excuse', { value }); }
+function doNextRound() { socket.emit('next_round'); }
+
+// ── UI helpers ────────────────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function toast(msg, ms = 2800) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), ms);
+}
+</script>
+</body>
+</html>
