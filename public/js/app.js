@@ -7,7 +7,7 @@ const COLORS = [
 ];
 
 let socket, myId, myRoom, myColor = COLORS[0], myName = '';
-let lastState = null, isHost = false;
+let lastState = null, isHost = false, mySpectator = false;
 
 // ══════════════════════════════════════════════════════════════════
 // TRICK ZONE — SYSTÈME DOM PERSISTANT
@@ -276,8 +276,10 @@ initColorPicker('h-colors', c => { myColor = c; });
 function connectSocket() {
   socket = io();
 
-  socket.on('joined', ({ code, playerId }) => {
+  socket.on('joined', ({ code, playerId, isSpectator }) => {
     myId = playerId; myRoom = code;
+    mySpectator = !!isSpectator;
+    localStorage.setItem('tarot_code', code);
     document.getElementById('room-code-display').textContent = code;
     showScreen('lobby');
   });
@@ -294,14 +296,35 @@ function connectSocket() {
     else { showScreen('game'); renderGame(gs); }
   });
 
-  socket.on('error', (msg) => toast('⚠ ' + msg));
+  socket.on('error', (msg) => {
+    toast('⚠ ' + msg);
+    if (msg === 'Salon introuvable' || msg === 'Impossible de vous reconnecter') {
+      localStorage.removeItem('tarot_code');
+    }
+  });
 }
+
+window.addEventListener('DOMContentLoaded', () => {
+  /*
+  // Fonctionnalité de reconnexion automatique mise de côté pour l'instant
+  const code = localStorage.getItem('tarot_code');
+  const name = localStorage.getItem('tarot_name');
+  if (code && name) {
+    document.getElementById('h-name').value = name;
+    document.getElementById('h-code').value = code;
+    myName = name;
+    connectSocket();
+    socket.emit('reconnect_room', { code, name });
+  }
+  */
+});
 
 // ══════════════════════════════════════
 // Room actions
 // ══════════════════════════════════════
 function createRoom() {
   myName = document.getElementById('h-name').value.trim() || 'Hôte';
+  localStorage.setItem('tarot_name', myName);
   connectSocket();
   socket.emit('create_room', { name: myName, color: myColor });
 }
@@ -309,6 +332,8 @@ function joinRoom() {
   const code = document.getElementById('h-code').value.trim().toUpperCase();
   if (code.length !== 6) return toast('Code invalide (6 caractères)');
   myName = document.getElementById('h-name').value.trim() || 'Joueur';
+  localStorage.setItem('tarot_name', myName);
+  localStorage.setItem('tarot_code', code);
   connectSocket();
   socket.emit('join_room', { code, name: myName, color: myColor });
 }
@@ -438,10 +463,12 @@ bindExcuseButtons();
 function renderGame(gs) {
   const n = gs.players.length;
   const size = gs.roundSize;
-  const me = gs.players[gs.myIdx];
-  const isMyTurn = gs.myIdx === gs.currentPlayerIdx;
-  const isMyAnnounceTurn = gs.phase === 'announce' && gs.myIdx === gs.announceIdx;
-  const canPlay = gs.phase === 'play' && isMyTurn && !gs.excuseWaiting;
+  const isSpectator = gs.isSpectator;
+  const viewIdx = isSpectator ? 0 : gs.myIdx;
+  const me = isSpectator ? {} : gs.players[gs.myIdx];
+  const isMyTurn = !isSpectator && gs.myIdx === gs.currentPlayerIdx;
+  const isMyAnnounceTurn = !isSpectator && gs.phase === 'announce' && gs.myIdx === gs.announceIdx;
+  const canPlay = !isSpectator && gs.phase === 'play' && isMyTurn && !gs.excuseWaiting;
 
   // Top bar
   document.getElementById('g-round-info').textContent =
@@ -486,7 +513,7 @@ function renderGame(gs) {
   // ── Player seats ──
   const center = document.getElementById('table-center');
   center.querySelectorAll('.player-seat').forEach(e => e.remove());
-  const positions = getSeatPositions(n, gs.myIdx);
+  const positions = getSeatPositions(n, viewIdx);
 
   gs.players.forEach((p, i) => {
     if (i === gs.myIdx) return;
@@ -772,6 +799,53 @@ function resolveExcuse(value) {
   socket.emit('resolve_excuse', { value });
 }
 function doNextRound() { socket.emit('next_round'); }
+
+function goHome() {
+  if (socket) {
+    socket.disconnect();
+    socket = null;
+  }
+  lastState = null;
+  isHost = false;
+  mySpectator = false;
+  showScreen('home');
+}
+
+function toggleHistory() {
+  const modal = document.getElementById('history-modal');
+  if (modal.classList.contains('hidden')) {
+    modal.classList.remove('hidden');
+    renderHistory();
+    modal.style.display = 'flex';
+  } else {
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+  }
+}
+
+function renderHistory() {
+  const content = document.getElementById('history-content');
+  if (!lastState || !lastState.trickHistory || lastState.trickHistory.length === 0) {
+    content.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.5);margin:20px 0;">Aucun pli joué</div>';
+    return;
+  }
+  let html = '';
+  lastState.trickHistory.forEach((h, idx) => {
+    let trickHtml = h.trick.map(t => {
+      const p = lastState.players[t.playerIdx];
+      const nameHtml = `<div style="font-size:10px;color:${p.color};text-align:center;margin-top:4px;max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.name}</div>`;
+      return `<div style="display:flex;flex-direction:column;align-items:center;">${cardHTML(t.card)}${nameHtml}</div>`;
+    }).join('');
+    
+    html += `
+      <div style="border-bottom:1px solid rgba(255,255,255,0.1);padding:10px 0;">
+        <div style="font-size:0.8rem;color:var(--cream);margin-bottom:5px;">Gagnant : <strong>${h.winner}</strong></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;--card-w:60px;--card-h:90px;">${trickHtml}</div>
+      </div>
+    `;
+  });
+  content.innerHTML = html;
+}
 
 // ══════════════════════════════════════
 // UI helpers

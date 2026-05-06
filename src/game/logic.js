@@ -242,6 +242,11 @@ function resolveTrick(room) {
   // Save completed trick before clearing so clients can display it
   gs.lastCompletedTrick = [...gs.currentTrick];
   gs.lastTrickWinnerIdx = winner.playerIdx;
+  
+  if (!gs.trickHistory) gs.trickHistory = [];
+  gs.trickHistory.push({ trick: [...gs.currentTrick], winner: winnerName });
+  if (gs.trickHistory.length > 3) gs.trickHistory.shift();
+
   gs.currentTrick = [];
   gs.leadPlayerIdx = winner.playerIdx;
   gs.currentPlayerIdx = winner.playerIdx;

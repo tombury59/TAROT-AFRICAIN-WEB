@@ -29,15 +29,17 @@ function getRoundSize(roundIdx, numPlayers) {
 }
 
 // Build the "view" a specific player sees
-function buildPlayerView(room, playerId) {
+function buildPlayerView(room, playerId, isSpectator = false) {
   const gs = room.state;
   if (!gs) return null;
 
-  const myIdx = room.players.findIndex(p => p.id === playerId);
+  const myIdx = isSpectator ? -1 : room.players.findIndex(p => p.id === playerId);
   const gs_players = gs.players.map((gp, i) => {
     const isMe = i === myIdx;
     let hand;
-    if (gs.oneCardSpecial) {
+    if (isSpectator) {
+      hand = gp.hand.map(() => ({ hidden: true }));
+    } else if (gs.oneCardSpecial) {
       // In 1-card round: you see everyone's cards except your own
       hand = isMe
         ? gp.hand.map(() => ({ hidden: true }))
@@ -68,6 +70,8 @@ function buildPlayerView(room, playerId) {
     excuseWaiting: gs.excuseWaiting ? { playerIdx: gs.excuseWaiting.playerIdx } : null,
     players: gs_players,
     myIdx,
+    isSpectator,
+    trickHistory: gs.trickHistory || [],
     log: gs.log.slice(-8),
   };
 }

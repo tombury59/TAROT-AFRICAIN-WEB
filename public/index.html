@@ -46,6 +46,7 @@
 
   <!-- ═══════════════ LOBBY ═══════════════ -->
   <div id="lobby" class="screen">
+    <button class="btn btn-ghost" onclick="goHome()" style="position:absolute; top:20px; left:20px; padding:6px 12px; width:auto; z-index:10; margin:0;">← Quitter</button>
     <div class="lobby-inner">
       <div class="lobby-code-wrap">
         <div class="lobby-code-label">CODE DU SALON</div>
@@ -74,6 +75,10 @@
       <div class="top-bar">
         <div class="top-bar-title">⚜ TAROT AFRICAIN</div>
         <div class="top-bar-info" id="g-round-info">—</div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-ghost" onclick="toggleHistory()" style="padding:4px 8px; font-size:0.7rem; width:auto; margin:0;">Historique</button>
+          <button class="btn btn-ghost" onclick="goHome()" style="padding:4px 8px; font-size:0.7rem; width:auto; margin:0;">Quitter</button>
+        </div>
       </div>
 
       <div class="table-center" id="table-center">
@@ -126,6 +131,15 @@
           <span class="excuse-modal-btn-sub">la plus forte</span>
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ HISTORY MODAL ═══════════════ -->
+  <div id="history-modal" class="hidden" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:1000;justify-content:center;align-items:center;">
+    <div class="history-modal-box" style="background:var(--surface-1);padding:1rem;border-radius:8px;border:1px solid rgba(201,168,76,0.3);max-width:90%;width:400px;max-height:80vh;overflow-y:auto;">
+      <div style="font-family:'Cinzel',serif;font-size:1rem;color:var(--gold);text-align:center;margin-bottom:10px;">Historique (3 derniers plis)</div>
+      <div id="history-content"></div>
+      <button class="btn btn-ghost" onclick="toggleHistory()" style="margin-top:10px;width:100%;">Fermer</button>
     </div>
   </div>
 
