@@ -14,9 +14,19 @@
   --red: #c0392b;
   --blue: #1a5fa8;
   --bg: #060e08;
-  --table-shadow: 0 0 120px rgba(0, 0, 0, .9), 0 0 40px rgba(0, 0, 0, .7);
   --card-w: 110px;
   --card-h: 165px;
+  /* Card shadow stack — 4 layers for physicality */
+  --card-shadow:
+    0 1px 1px rgba(0, 0, 0, .12),
+    0 3px 6px rgba(0, 0, 0, .18),
+    0 8px 20px rgba(0, 0, 0, .28),
+    0 20px 40px rgba(0, 0, 0, .16);
+  --card-shadow-hover:
+    0 2px 2px rgba(0, 0, 0, .14),
+    0 6px 12px rgba(0, 0, 0, .22),
+    0 16px 36px rgba(0, 0, 0, .36),
+    0 32px 56px rgba(0, 0, 0, .22);
 }
 
 *,
@@ -275,7 +285,7 @@ body {
 }
 
 /* ═══════════════════════════════════════════════
-   LOBBY SCREEN
+   LOBBY
 ═══════════════════════════════════════════════ */
 #lobby {
   flex-direction: column;
@@ -389,7 +399,7 @@ body {
 }
 
 /* ═══════════════════════════════════════════════
-   GAME SCREEN — TABLE
+   GAME — TABLE
 ═══════════════════════════════════════════════ */
 #game {
   flex-direction: column;
@@ -476,7 +486,7 @@ body {
   pointer-events: none;
 }
 
-/* ── Players around the table ── */
+/* ── Players ── */
 .player-seat {
   position: absolute;
   display: flex;
@@ -647,6 +657,7 @@ body {
   color: rgba(201, 168, 76, .7);
 }
 
+/* ── Announce bubble ── */
 .announce-bubble {
   position: absolute;
   display: none;
@@ -766,167 +777,258 @@ body {
   transition: transform .2s;
 }
 
-/* ════════════════════════════════════════════════════
-   TRICK ZONE — ULTRA REALISTIC CARD SYSTEM
-════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════════
+   TRICK ZONE — SYSTÈME DE CARTES PERSISTANTES ULTRA RÉALISTE
+   Les cartes ne disparaissent JAMAIS par re-render.
+   Elles vivent dans un DOM stable, animées à la pose.
+═══════════════════════════════════════════════════════════════════ */
 
-/* The trick zone: absolute, centered on table */
 .trick-zone {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: min(88vw, 580px);
-  height: min(58vh, 400px);
+  width: min(88vw, 560px);
+  height: min(56vh, 380px);
   pointer-events: none;
   z-index: 10;
 }
 
-/* Each played card wrapper — absolutely placed */
+/* ── Chaque carte jouée : wrapper absolu centré sur sa position finale ── */
 .trick-card-wrap {
   position: absolute;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  transform: translate(-50%, -50%);
-  /* Will be given animation class dynamically */
+  /* Centrage par translate — la position left/top pointe le centre de la carte */
+  transform: translate(-50%, -50%) rotate(var(--final-rot, 0deg));
+  will-change: transform, opacity;
+  pointer-events: none;
 }
 
-/* THE CARD THROW ANIMATION — cinematic arc */
-@keyframes throwCard {
+/* ══════════════════════════════════════════════════
+   ANIMATIONS DE JET — CINÉMATIQUES SELON LA DIRECTION
+   Chaque joueur a sa propre direction d'arrivée.
+   Les rotations CSS custom properties permettent une
+   variation aléatoire naturelle sur chaque carte.
+══════════════════════════════════════════════════ */
+
+/* Depuis le bas (moi) — carte lancée vers le haut */
+@keyframes dealFromBottom {
   0% {
     opacity: 0;
-    transform: translate(-50%, calc(-50% + 120px)) scale(0.65) rotate(var(--throw-rot-start, -15deg));
-    filter: blur(2px);
-  }
-
-  35% {
-    opacity: 1;
-    transform: translate(-50%, calc(-50% - 22px)) scale(1.12) rotate(var(--throw-rot-mid, 4deg));
-    filter: blur(0px);
-  }
-
-  65% {
-    transform: translate(-50%, calc(-50% - 8px)) scale(1.06) rotate(var(--throw-rot-end, -1deg));
-  }
-
-  100% {
-    transform: translate(-50%, -50%) scale(1) rotate(var(--final-rot, 0deg));
-    filter: blur(0px);
-  }
-}
-
-/* Throw from top (opponent) */
-@keyframes throwCardTop {
-  0% {
-    opacity: 0;
-    transform: translate(-50%, calc(-50% - 100px)) scale(0.65) rotate(var(--throw-rot-start, 12deg));
-    filter: blur(2px);
-  }
-
-  35% {
-    opacity: 1;
-    transform: translate(-50%, calc(-50% + 18px)) scale(1.1) rotate(var(--throw-rot-mid, -3deg));
-    filter: blur(0px);
-  }
-
-  65% {
-    transform: translate(-50%, calc(-50% + 6px)) scale(1.04) rotate(var(--throw-rot-end, 1deg));
-  }
-
-  100% {
-    transform: translate(-50%, -50%) scale(1) rotate(var(--final-rot, 0deg));
-    filter: blur(0px);
-  }
-}
-
-/* Throw from left */
-@keyframes throwCardLeft {
-  0% {
-    opacity: 0;
-    transform: translate(calc(-50% - 110px), -50%) scale(0.65) rotate(var(--throw-rot-start, 20deg));
-    filter: blur(2px);
-  }
-
-  35% {
-    opacity: 1;
-    transform: translate(calc(-50% + 16px), -50%) scale(1.1) rotate(var(--throw-rot-mid, -5deg));
-    filter: blur(0px);
-  }
-
-  65% {
-    transform: translate(calc(-50% + 5px), -50%) scale(1.04) rotate(var(--throw-rot-end, 2deg));
-  }
-
-  100% {
-    transform: translate(-50%, -50%) scale(1) rotate(var(--final-rot, 0deg));
-    filter: blur(0px);
-  }
-}
-
-/* Throw from right */
-@keyframes throwCardRight {
-  0% {
-    opacity: 0;
-    transform: translate(calc(-50% + 110px), -50%) scale(0.65) rotate(var(--throw-rot-start, -20deg));
-    filter: blur(2px);
-  }
-
-  35% {
-    opacity: 1;
-    transform: translate(calc(-50% - 16px), -50%) scale(1.1) rotate(var(--throw-rot-mid, 5deg));
-    filter: blur(0px);
-  }
-
-  65% {
-    transform: translate(calc(-50% - 5px), -50%) scale(1.04) rotate(var(--throw-rot-end, -2deg));
-  }
-
-  100% {
-    transform: translate(-50%, -50%) scale(1) rotate(var(--final-rot, 0deg));
-    filter: blur(0px);
-  }
-}
-
-.trick-card-wrap.anim-throw-bottom {
-  animation: throwCard 0.52s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
-}
-
-.trick-card-wrap.anim-throw-top {
-  animation: throwCardTop 0.52s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
-}
-
-.trick-card-wrap.anim-throw-left {
-  animation: throwCardLeft 0.52s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
-}
-
-.trick-card-wrap.anim-throw-right {
-  animation: throwCardRight 0.52s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
-}
-
-/* Trick won: cards slide to winner */
-@keyframes sweepToWinner {
-  0% {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1) rotate(var(--final-rot, 0deg));
+    transform: translate(-50%, calc(-50% + 160px)) scale(0.7) rotate(var(--rot-start, -12deg));
+    filter: blur(1.5px);
   }
 
   30% {
-    transform: translate(-50%, -50%) scale(1.05) rotate(var(--final-rot, 0deg));
+    opacity: 1;
+    filter: blur(0);
+    transform: translate(-50%, calc(-50% - 28px)) scale(1.14) rotate(var(--rot-mid, 3deg));
+  }
+
+  55% {
+    transform: translate(-50%, calc(-50% - 10px)) scale(1.07) rotate(var(--rot-land, -1deg));
+  }
+
+  75% {
+    transform: translate(-50%, calc(-50% + 4px)) scale(1.02) rotate(calc(var(--final-rot, 0deg) * 0.7));
+  }
+
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate(-50%, -50%) scale(1) rotate(var(--final-rot, 0deg));
+  }
+}
+
+/* Depuis le haut (adversaire face) */
+@keyframes dealFromTop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% - 150px)) scale(0.7) rotate(var(--rot-start, 10deg));
+    filter: blur(1.5px);
+  }
+
+  30% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate(-50%, calc(-50% + 24px)) scale(1.12) rotate(var(--rot-mid, -3deg));
+  }
+
+  55% {
+    transform: translate(-50%, calc(-50% + 8px)) scale(1.05) rotate(var(--rot-land, 1.5deg));
+  }
+
+  75% {
+    transform: translate(-50%, calc(-50% - 3px)) scale(1.01) rotate(calc(var(--final-rot, 0deg) * 0.8));
+  }
+
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate(-50%, -50%) scale(1) rotate(var(--final-rot, 0deg));
+  }
+}
+
+/* Depuis la gauche */
+@keyframes dealFromLeft {
+  0% {
+    opacity: 0;
+    transform: translate(calc(-50% - 150px), -50%) scale(0.68) rotate(var(--rot-start, 18deg));
+    filter: blur(1.5px);
+  }
+
+  30% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate(calc(-50% + 22px), -50%) scale(1.13) rotate(var(--rot-mid, -4deg));
+  }
+
+  55% {
+    transform: translate(calc(-50% + 7px), -50%) scale(1.05) rotate(var(--rot-land, 2deg));
+  }
+
+  75% {
+    transform: translate(calc(-50% - 2px), -50%) scale(1.01) rotate(calc(var(--final-rot, 0deg) * 0.8));
+  }
+
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate(-50%, -50%) scale(1) rotate(var(--final-rot, 0deg));
+  }
+}
+
+/* Depuis la droite */
+@keyframes dealFromRight {
+  0% {
+    opacity: 0;
+    transform: translate(calc(-50% + 150px), -50%) scale(0.68) rotate(var(--rot-start, -18deg));
+    filter: blur(1.5px);
+  }
+
+  30% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate(calc(-50% - 22px), -50%) scale(1.13) rotate(var(--rot-mid, 4deg));
+  }
+
+  55% {
+    transform: translate(calc(-50% - 7px), -50%) scale(1.05) rotate(var(--rot-land, -2deg));
+  }
+
+  75% {
+    transform: translate(calc(-50% + 2px), -50%) scale(1.01) rotate(calc(var(--final-rot, 0deg) * 0.8));
+  }
+
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate(-50%, -50%) scale(1) rotate(var(--final-rot, 0deg));
+  }
+}
+
+/* Depuis le coin haut-gauche (5 joueurs) */
+@keyframes dealFromTopLeft {
+  0% {
+    opacity: 0;
+    transform: translate(calc(-50% - 110px), calc(-50% - 110px)) scale(0.65) rotate(var(--rot-start, 22deg));
+    filter: blur(1.5px);
+  }
+
+  35% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate(calc(-50% + 14px), calc(-50% + 14px)) scale(1.1) rotate(var(--rot-mid, -5deg));
+  }
+
+  65% {
+    transform: translate(calc(-50% + 4px), calc(-50% + 4px)) scale(1.04) rotate(var(--rot-land, 2deg));
+  }
+
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate(-50%, -50%) scale(1) rotate(var(--final-rot, 0deg));
+  }
+}
+
+/* Depuis le coin haut-droit (5 joueurs) */
+@keyframes dealFromTopRight {
+  0% {
+    opacity: 0;
+    transform: translate(calc(-50% + 110px), calc(-50% - 110px)) scale(0.65) rotate(var(--rot-start, -22deg));
+    filter: blur(1.5px);
+  }
+
+  35% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate(calc(-50% - 14px), calc(-50% + 14px)) scale(1.1) rotate(var(--rot-mid, 5deg));
+  }
+
+  65% {
+    transform: translate(calc(-50% - 4px), calc(-50% + 4px)) scale(1.04) rotate(var(--rot-land, -2deg));
+  }
+
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate(-50%, -50%) scale(1) rotate(var(--final-rot, 0deg));
+  }
+}
+
+/* Classes d'animation appliquées dynamiquement */
+.trick-card-wrap.deal-from-bottom {
+  animation: dealFromBottom 0.55s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+
+.trick-card-wrap.deal-from-top {
+  animation: dealFromTop 0.55s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+
+.trick-card-wrap.deal-from-left {
+  animation: dealFromLeft 0.55s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+
+.trick-card-wrap.deal-from-right {
+  animation: dealFromRight 0.55s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+
+.trick-card-wrap.deal-from-topleft {
+  animation: dealFromTopLeft 0.55s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+
+.trick-card-wrap.deal-from-topright {
+  animation: dealFromTopRight 0.55s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+
+/* ── Ramassage du pli : les cartes filent vers le gagnant ── */
+@keyframes sweepCard {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1) rotate(var(--final-rot, 0deg));
+  }
+
+  20% {
+    transform: translate(-50%, -50%) scale(1.06) rotate(var(--final-rot, 0deg));
   }
 
   100% {
     opacity: 0;
     transform:
-      translate(calc(-50% + var(--sweep-x, 0px)), calc(-50% + var(--sweep-y, 0px))) scale(0.35) rotate(calc(var(--final-rot, 0deg) + var(--sweep-spin, 15deg)));
+      translate(calc(-50% + var(--sweep-x, 0px)), calc(-50% + var(--sweep-y, 0px))) scale(0.3) rotate(calc(var(--final-rot, 0deg) + var(--sweep-spin, 20deg)));
   }
 }
 
-.trick-card-wrap.anim-sweep {
-  animation: sweepToWinner 0.7s cubic-bezier(0.55, 0, 1, 0.5) forwards;
+.trick-card-wrap.sweeping {
+  animation: sweepCard 0.65s cubic-bezier(0.6, 0, 0.9, 0.4) forwards;
+  pointer-events: none;
 }
 
+/* Label du joueur sous la carte */
 .trick-player-lbl {
   font-size: .6rem;
   font-family: 'Cinzel', serif;
@@ -934,6 +1036,7 @@ body {
   opacity: .85;
   white-space: nowrap;
   text-shadow: 0 1px 4px rgba(0, 0, 0, .9);
+  pointer-events: none;
 }
 
 /* ── Phase banner ── */
@@ -1023,9 +1126,10 @@ body {
   white-space: nowrap;
 }
 
-/* ════════════════════════════════
-   THE CARD — ULTRA REALISTIC
-════════════════════════════════ */
+/* ════════════════════════════════════════════════
+   LA CARTE — PHYSIQUE RÉALISTE
+   Couches : papier ivoire → image → brillance → valeur
+════════════════════════════════════════════════ */
 .tcard {
   width: var(--card-w);
   height: var(--card-h);
@@ -1036,34 +1140,22 @@ body {
   user-select: none;
   will-change: transform;
   transform-style: preserve-3d;
-  /* Subtle perpetual float when playable */
 }
 
-/* Card shell — creates the physical card illusion */
+/* Shell physique de la carte */
 .tcard-face {
   position: absolute;
   inset: 0;
   border-radius: 10px;
-  /* Realistic card paper */
   background: linear-gradient(160deg, #fffef8 0%, #faf5e4 50%, #f0e8cc 100%);
   border: 1.5px solid rgba(120, 90, 20, .25);
-  /* Layered shadows for physicality */
-  box-shadow:
-    0 1px 1px rgba(0, 0, 0, .08),
-    0 2px 4px rgba(0, 0, 0, .12),
-    0 6px 16px rgba(0, 0, 0, .22),
-    0 16px 32px rgba(0, 0, 0, .14),
-    inset 0 1px 0 rgba(255, 255, 255, .9),
-    inset 0 -1px 0 rgba(0, 0, 0, .06);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  box-shadow: var(--card-shadow);
   overflow: hidden;
   transition: box-shadow .2s;
+  /* PAS de display:flex — on utilise position:absolute pour tous les enfants */
 }
 
-/* Inner border line (like real cards) */
+/* Bordure intérieure (comme les vraies cartes) */
 .tcard-face::before {
   content: '';
   position: absolute;
@@ -1074,7 +1166,7 @@ body {
   z-index: 2;
 }
 
-/* Gloss sheen */
+/* Reflet de brillance */
 .tcard-face::after {
   content: '';
   position: absolute;
@@ -1082,13 +1174,13 @@ body {
   left: 0;
   right: 0;
   height: 45%;
-  background: linear-gradient(180deg, rgba(255, 255, 255, .28) 0%, rgba(255, 255, 255, 0) 100%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, .22) 0%, rgba(255, 255, 255, 0) 100%);
   border-radius: 10px 10px 0 0;
   pointer-events: none;
-  z-index: 3;
+  z-index: 4;
 }
 
-/* Card image */
+/* Image de la carte — remplit tout le fond */
 .tcard-img {
   position: absolute;
   inset: 0;
@@ -1098,32 +1190,57 @@ body {
   border-radius: 9px;
   display: block;
   z-index: 1;
-  /* Avoid flickering */
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+  transform: translateZ(0);
+  pointer-events: none;
 }
 
-/* Value badge — always on top */
-.card-center-val {
+/* Valeur en coin — haut-gauche */
+.card-corner {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(0, 0, 0, .7);
-  color: #fff;
   font-family: 'Cinzel', serif;
-  font-size: 1.3rem;
   font-weight: 900;
-  padding: 5px 12px;
-  border-radius: 7px;
-  border: 1px solid rgba(201, 168, 76, .5);
+  font-size: .95rem;
   line-height: 1;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, .6);
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .9), 0 0 8px rgba(0, 0, 0, .6);
   z-index: 5;
+  pointer-events: none;
+  background: rgba(0, 0, 0, .45);
+  padding: 2px 5px;
+  border-radius: 4px;
+  letter-spacing: .5px;
 }
 
-/* Hover veil overlay */
+.card-corner-tl {
+  top: 6px;
+  left: 6px;
+}
+
+.card-corner-br {
+  bottom: 6px;
+  right: 6px;
+  transform: rotate(180deg);
+}
+
+/* Badge valeur effective de l'Excuse */
+.card-ev-badge {
+  position: absolute;
+  bottom: 3px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: 'Cinzel', serif;
+  font-size: .52rem;
+  font-weight: 700;
+  color: var(--gold);
+  background: rgba(0, 0, 0, .65);
+  padding: 1px 0;
+  z-index: 6;
+}
+
+/* Voile au hover */
 .card-hover-veil {
   position: absolute;
   inset: 0;
@@ -1152,7 +1269,7 @@ body {
   opacity: 1;
 }
 
-/* Card back */
+/* Dos de carte */
 .tcard-back .tcard-face {
   background: #fff;
   border-color: rgba(201, 168, 76, .4);
@@ -1168,6 +1285,7 @@ body {
   display: block;
   z-index: 1;
   backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
 .card-back-inner {
@@ -1196,10 +1314,9 @@ body {
   opacity: 0 !important;
 }
 
-/* ════════════════════════════════
-   MY HAND — FAN LAYOUT
-   Ultra-realistic fan with perspective
-════════════════════════════════ */
+/* ════════════════════════════════════════════
+   MAIN EN ÉVENTAIL — FAN RÉALISTE
+════════════════════════════════════════════ */
 .hand-fan {
   display: flex;
   justify-content: center;
@@ -1212,35 +1329,39 @@ body {
 .hand-fan .tcard {
   margin: 0 -16px;
   transition:
-    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
-    box-shadow 0.2s,
-    z-index 0s;
+    transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.2s, z-index 0s;
 }
 
 .hand-fan .tcard.playable:hover {
   z-index: 200 !important;
 }
 
-/* Play card: fly-out animation */
+/* Animation de jeu d'une carte depuis la main */
 @keyframes playCardFly {
   0% {
-    transform: translate(-50%, 0) scale(1);
     opacity: 1;
+    transform: var(--fan-transform, rotate(0deg) translateY(0)) scale(1);
   }
 
-  40% {
-    transform: translate(-50%, -60px) scale(1.15) rotate(-3deg);
+  35% {
     opacity: 1;
+    transform: translateY(-70px) scale(1.18) rotate(-2deg);
+  }
+
+  65% {
+    opacity: 1;
+    transform: translateY(-120px) scale(1.1) rotate(1deg);
   }
 
   100% {
-    transform: translate(-50%, -220px) scale(0.8);
     opacity: 0;
+    transform: translateY(-240px) scale(0.85) rotate(0deg);
   }
 }
 
 .tcard.playing {
-  animation: playCardFly 0.45s cubic-bezier(0.4, 0, 1, 1) forwards;
+  animation: playCardFly 0.48s cubic-bezier(0.4, 0, 1, 1) forwards;
   pointer-events: none;
   z-index: 300 !important;
   position: relative;
@@ -1610,7 +1731,7 @@ body {
   line-height: 1;
 }
 
-/* ── Winner badge ── */
+/* ── Badge victoire de pli ── */
 .trick-done-badge {
   position: absolute;
   top: 50%;
@@ -1767,11 +1888,6 @@ body {
 .toast.show {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
-}
-
-/* ── Trick cards on table — realistic placement shadows ── */
-.trick-card-on-table {
-  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, .55)) drop-shadow(0 2px 4px rgba(0, 0, 0, .3));
 }
 
 /* ═══════════════════════════════════════════════
